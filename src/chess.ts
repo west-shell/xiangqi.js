@@ -78,7 +78,9 @@ export const PAWN = 'p'
 export type Color = 'w' | 'b'
 export type PieceSymbol = 'p' | 'h' | 'e' | 'r' | 'c' | 'k' | 'a'
 
-// Board: 9 columns (a-i) x 10 ranks (0-9), ranks 0=red back, 9=black back
+/*
+ * Board: 9 columns (a-i) x 10 ranks (0-9), ranks 0=red back, 9=black back
+ */
 // prettier-ignore
 export type Square =
   'a9' | 'b9' | 'c9' | 'd9' | 'e9' | 'f9' | 'g9' | 'h9' | 'i9' |
@@ -291,10 +293,12 @@ const HEADER_TEMPLATE = {
 }
 /* eslint-enable @typescript-eslint/naming-convention */
 
-// Board: 10 ranks x 16 files per rank (9 real + 7 padding) = 160 elements
-// Internal index = rank * 16 + file
-// Rank 0 = red's back rank (external "0"), Rank 9 = black's back rank (external "9")
-// File 0 = 'a', ..., File 8 = 'i', files 9-15 are off-board padding
+/*
+ * Board: 10 ranks x 16 files per rank (9 real + 7 padding) = 160 elements.
+ * Internal index = rank * 16 + file.
+ * Rank 0 = red's back rank, Rank 9 = black's back rank.
+ * File 0 = 'a', ..., File 8 = 'i', files 9-15 are off-board padding.
+ */
 
 // prettier-ignore
 const XQ_SQUARES: Record<Square, number> = {
@@ -347,7 +351,7 @@ const SAN_NULLMOVE = '--'
 
 // Check if a square index is off the board
 function offBoard(square: number): boolean {
-  return square < 0 || (square & 0xf) >= 9 || (square >> 4) >= 10
+  return square < 0 || (square & 0xf) >= 9 || square >> 4 >= 10
 }
 
 // Extracts the zero-based rank of a square index.
@@ -424,7 +428,10 @@ export function validateFen(fen: string): { ok: boolean; error?: string } {
 
   // 5th criterion: 3rd field is a valid castle-string? (always '-' for Xiangqi)
   if (tokens[2] !== '-') {
-    return { ok: false, error: 'Invalid FEN: castling availability must be "-"' }
+    return {
+      ok: false,
+      error: 'Invalid FEN: castling availability must be "-"',
+    }
   }
 
   // 6th criterion: 2nd field is "w" (white/red) or "b" (black)?
@@ -587,10 +594,7 @@ export class Chess {
     this._header['FEN'] = null
   }
 
-  load(
-    fen: string,
-    { skipValidation = false, preserveHeaders = false } = {},
-  ) {
+  load(fen: string, { skipValidation = false, preserveHeaders = false } = {}) {
     let tokens = fen.split(/\s+/)
 
     // append commonly omitted fen tokens
@@ -924,10 +928,7 @@ export class Chess {
 
         case HORSE: {
           // L-shape with leg blocking check
-          if (
-            (absDf === 2 && absDr === 1) ||
-            (absDf === 1 && absDr === 2)
-          ) {
+          if ((absDf === 2 && absDr === 1) || (absDf === 1 && absDr === 2)) {
             // Determine leg square
             let legFile: number, legRank: number
             if (absDf === 2) {
@@ -1005,7 +1006,10 @@ export class Chess {
             if (crossedRiver(color, fromRank)) {
               attacks = true
             }
-          } else if (targetFile === fromFile && targetRank === fromRank + (forward >> 4)) {
+          } else if (
+            targetFile === fromFile &&
+            targetRank === fromRank + (forward >> 4)
+          ) {
             attacks = true
           }
           break
@@ -1078,8 +1082,7 @@ export class Chess {
       }
 
       if (this._board[i]) {
-        pieces[this._board[i].type] =
-          (pieces[this._board[i].type] || 0) + 1
+        pieces[this._board[i].type] = (pieces[this._board[i].type] || 0) + 1
         numPieces++
       }
     }
@@ -1087,8 +1090,10 @@ export class Chess {
     // Only kings left
     if (numPieces === 2) return true
 
-    // One side has only king, other has king + advisors/elephants only
-    // (advisors and elephants alone cannot checkmate)
+    /*
+     * One side has only king, other has king + advisors/elephants only
+     * (advisors and elephants alone cannot checkmate)
+     */
     const attackPieces = [
       pieces[ROOK] || 0,
       pieces[CANNON] || 0,
@@ -1098,8 +1103,10 @@ export class Chess {
     const hasAttackPieces = attackPieces.some((c) => c > 0)
 
     if (!hasAttackPieces) {
-      // Only kings, advisors, elephants remain
-      // Advisors and elephants from one side cannot force checkmate
+      /*
+       * Only kings, advisors, elephants remain.
+       * Advisors and elephants from one side cannot force checkmate.
+       */
       if ((pieces[ADVISOR] || 0) + (pieces[ELEPHANT] || 0) <= 2) {
         return true
       }
@@ -1129,7 +1136,7 @@ export class Chess {
   }
 
   private _createMove(internal: InternalMove) {
-    const san = this._moveToSan(internal, this._moves({ legal: true }))
+    const san = this._moveToSan(internal)
     const before = this.fen()
 
     this._makeMove(internal)
@@ -1205,7 +1212,7 @@ export class Chess {
     if (verbose) {
       return moves.map((move) => this._createMove(move))
     } else {
-      return moves.map((move) => this._moveToSan(move, moves))
+      return moves.map((move) => this._moveToSan(move))
     }
   }
 
@@ -1261,7 +1268,15 @@ export class Chess {
             if (!this._board[to]) {
               addMove(moves, us, from, to, KING)
             } else if (this._board[to].color === them) {
-              addMove(moves, us, from, to, KING, this._board[to].type, BITS.CAPTURE)
+              addMove(
+                moves,
+                us,
+                from,
+                to,
+                KING,
+                this._board[to].type,
+                BITS.CAPTURE,
+              )
             }
           }
           break
@@ -1277,7 +1292,15 @@ export class Chess {
             if (!this._board[to]) {
               addMove(moves, us, from, to, ADVISOR)
             } else if (this._board[to].color === them) {
-              addMove(moves, us, from, to, ADVISOR, this._board[to].type, BITS.CAPTURE)
+              addMove(
+                moves,
+                us,
+                from,
+                to,
+                ADVISOR,
+                this._board[to].type,
+                BITS.CAPTURE,
+              )
             }
           }
           break
@@ -1301,7 +1324,15 @@ export class Chess {
             if (!this._board[to]) {
               addMove(moves, us, from, to, ELEPHANT)
             } else if (this._board[to].color === them) {
-              addMove(moves, us, from, to, ELEPHANT, this._board[to].type, BITS.CAPTURE)
+              addMove(
+                moves,
+                us,
+                from,
+                to,
+                ELEPHANT,
+                this._board[to].type,
+                BITS.CAPTURE,
+              )
             }
           }
           break
@@ -1317,7 +1348,15 @@ export class Chess {
             if (!this._board[to]) {
               addMove(moves, us, from, to, HORSE)
             } else if (this._board[to].color === them) {
-              addMove(moves, us, from, to, HORSE, this._board[to].type, BITS.CAPTURE)
+              addMove(
+                moves,
+                us,
+                from,
+                to,
+                HORSE,
+                this._board[to].type,
+                BITS.CAPTURE,
+              )
             }
           }
           break
@@ -1331,7 +1370,15 @@ export class Chess {
                 addMove(moves, us, from, to, ROOK)
               } else {
                 if (this._board[to].color === them) {
-                  addMove(moves, us, from, to, ROOK, this._board[to].type, BITS.CAPTURE)
+                  addMove(
+                    moves,
+                    us,
+                    from,
+                    to,
+                    ROOK,
+                    this._board[to].type,
+                    BITS.CAPTURE,
+                  )
                 }
                 break
               }
@@ -1356,7 +1403,15 @@ export class Chess {
                 to += offset
               }
               if (!offBoard(to) && this._board[to]?.color === them) {
-                addMove(moves, us, from, to, CANNON, this._board[to].type, BITS.CAPTURE)
+                addMove(
+                  moves,
+                  us,
+                  from,
+                  to,
+                  CANNON,
+                  this._board[to].type,
+                  BITS.CAPTURE,
+                )
               }
             }
           }
@@ -1371,7 +1426,15 @@ export class Chess {
             if (!this._board[fwd]) {
               addMove(moves, us, from, fwd, PAWN)
             } else if (this._board[fwd].color === them) {
-              addMove(moves, us, from, fwd, PAWN, this._board[fwd].type, BITS.CAPTURE)
+              addMove(
+                moves,
+                us,
+                from,
+                fwd,
+                PAWN,
+                this._board[fwd].type,
+                BITS.CAPTURE,
+              )
             }
           }
           // Sideways moves (only after crossing river)
@@ -1382,7 +1445,15 @@ export class Chess {
               if (!this._board[to]) {
                 addMove(moves, us, from, to, PAWN)
               } else if (this._board[to].color === them) {
-                addMove(moves, us, from, to, PAWN, this._board[to].type, BITS.CAPTURE)
+                addMove(
+                  moves,
+                  us,
+                  from,
+                  to,
+                  PAWN,
+                  this._board[to].type,
+                  BITS.CAPTURE,
+                )
               }
             }
           }
@@ -1615,8 +1686,7 @@ export class Chess {
         moveString = this._moveNumber + '.'
       }
 
-      moveString =
-        moveString + ' ' + this._moveToSan(move, this._moves({ legal: true }))
+      moveString = moveString + ' ' + this._moveToSan(move)
       this._makeMove(move)
     }
 
@@ -1793,7 +1863,7 @@ export class Chess {
   }
 
   // Convert a move to ICCS notation (e.g., "b0e2")
-  private _moveToSan(move: InternalMove, _moves?: InternalMove[]): string {
+  private _moveToSan(move: InternalMove): string {
     if (move.flags & BITS.NULL_MOVE) {
       return SAN_NULLMOVE
     }
@@ -1815,7 +1885,7 @@ export class Chess {
 
   // Convert from SAN (WXF/ICCS notation) to internal move
   private _moveFromSan(move: string, strict = false): InternalMove | null {
-    let cleanMove = strippedSan(move)
+    const cleanMove = strippedSan(move)
 
     // Null move
     if (cleanMove == SAN_NULLMOVE) {
@@ -1829,11 +1899,11 @@ export class Chess {
     }
 
     // Try strict match against all legal moves
-    let pieceType = inferPieceType(cleanMove)
+    const pieceType = inferPieceType(cleanMove)
     let moves = this._moves({ legal: true, piece: pieceType })
 
     for (let i = 0; i < moves.length; i++) {
-      if (cleanMove === strippedSan(this._moveToSan(moves[i], moves))) {
+      if (cleanMove === strippedSan(this._moveToSan(moves[i]))) {
         return moves[i]
       }
     }
@@ -1843,9 +1913,7 @@ export class Chess {
     }
 
     // Permissive parser - handle ICCS format: [a-i][0-9]-?[a-i][0-9]
-    const iccsMatch = cleanMove.match(
-      /^([a-i])([0-9])-?([a-i])([0-9])$/i,
-    )
+    const iccsMatch = cleanMove.match(/^([a-i])([0-9])-?([a-i])([0-9])$/i)
     if (iccsMatch) {
       const fromSq = (iccsMatch[1].toLowerCase() + iccsMatch[2]) as Square
       const toSq = (iccsMatch[3].toLowerCase() + iccsMatch[4]) as Square
@@ -1863,19 +1931,20 @@ export class Chess {
       }
     }
 
-    // Permissive parser - try WXF format: [KAEHRCPkaehrcp][0-9][+=.x\-][0-9]
+    // Permissive parser - try WXF format
     const wxfMatch = cleanMove.match(
-      /^([KAEHRCPkaehrcp])?([1-9])([+=.x\-])([0-9])/,
+      /^([KAEHRCPkaehrcp])?([1-9])([+=.x-])([0-9])/,
     )
     if (wxfMatch) {
-      const piece =
-        wxfMatch[1]?.toLowerCase() || PAWN
+      const piece = wxfMatch[1]?.toLowerCase() || PAWN
       const fromCol = parseInt(wxfMatch[2], 10)
       const action = wxfMatch[3]
       const targetNum = parseInt(wxfMatch[4], 10)
 
-      // WXF column numbering: for White/Red, col 1=file 8, col 9=file 0
-      // For Black, col 1=file 0, col 9=file 8
+      /*
+       * WXF column numbering: for Red, col 1=file 8, col 9=file 0.
+       * For Black, col 1=file 0, col 9=file 8.
+       */
       let fromFile: number
       if (this._turn === WHITE) {
         fromFile = 9 - fromCol
@@ -1906,7 +1975,6 @@ export class Chess {
             }
           } else if (action === '+' || action === '-') {
             // Forward/backward - target is steps or column
-            // For pawns, target is the destination column
             const forward = this._turn === WHITE ? 1 : -1
             const actualSteps = (rank(m.to) - rank(m.from)) * forward
             if (actualSteps === targetNum) {
@@ -1983,10 +2051,18 @@ export class Chess {
   }
 
   board(): ({ square: Square; type: PieceSymbol; color: Color } | null)[][] {
-    const output: ({ square: Square; type: PieceSymbol; color: Color } | null)[][] = []
+    const output: ({
+      square: Square
+      type: PieceSymbol
+      color: Color
+    } | null)[][] = []
 
     for (let r = 9; r >= 0; r--) {
-      const row: ({ square: Square; type: PieceSymbol; color: Color } | null)[] = []
+      const row: ({
+        square: Square
+        type: PieceSymbol
+        color: Color
+      } | null)[] = []
       for (let f = 0; f < 9; f++) {
         const i = r * 16 + f
         if (this._board[i] == null) {
@@ -2033,7 +2109,7 @@ export class Chess {
       if (verbose) {
         moveHistory.push(this._createMove(move))
       } else {
-        moveHistory.push(this._moveToSan(move, this._moves()))
+        moveHistory.push(this._moveToSan(move))
       }
       this._makeMove(move)
     }

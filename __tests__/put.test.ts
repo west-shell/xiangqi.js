@@ -21,9 +21,9 @@ test('put - 无效位置返回 false', () => {
 
 test('put - 无效棋子返回 false', () => {
   const chess = new Chess()
-  expect(
-    chess.put({ type: 'x' as any, color: WHITE }, 'e4' as Square),
-  ).toBe(false)
+  expect(chess.put({ type: 'x' as any, color: WHITE }, 'e4' as Square)).toBe(
+    false,
+  )
 })
 
 test('put - 不能放置超过一个将', () => {

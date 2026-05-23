@@ -7,8 +7,15 @@
   "module": "dist/esm/chess.js",
   "types": "dist/types/chess.d.ts",
   "homepage": "https://github.com/jhlywa/chess.js",
-  "keywords": ["xiangqi", "chinese-chess", "chess", "fen", "pgn", "typescript"],
-  "author": "Jeff Hlywa <jhlywa@gmail.com>",
+  "keywords": [
+    "xiangqi",
+    "chinese-chess",
+    "chess",
+    "fen",
+    "pgn",
+    "typescript"
+  ],
+  "author": "weshell <weshell@foxmail.com>",
   "scripts": {
     "prepare": "npm run build",
     "build": "npm run parser && tsc --noEmit && rollup -c",
@@ -27,7 +34,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jhlywa/chess.js"
+    "url": "https://github.com/west-shell/chess.js"
   },
   "engines": {
     "node": ">=20.0.0"
