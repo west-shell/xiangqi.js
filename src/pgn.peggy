@@ -93,7 +93,7 @@ piece_col
 pawn_col
 	= [1-9]
 ICCS_move
-	= [a-i][0-9]-?[a-i][0-9]
+	= [a-i][0-9]"-"?[a-i][0-9][+#]?
 
 suffixAnnotation "suffix annotation"
 	= $[!?] |1..2|

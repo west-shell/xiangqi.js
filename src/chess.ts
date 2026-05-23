@@ -57,39 +57,40 @@ export function xoroshiro128(state: bigint) {
 
 const rand = xoroshiro128(0xa187eb39cdcaed8f31c4b365b102e01en)
 
+// 2 colors x 7 piece types x 160 squares (10 ranks x 16 padded)
 const PIECE_KEYS = Array.from({ length: 2 }, () =>
-  Array.from({ length: 6 }, () => Array.from({ length: 128 }, () => rand())),
+  Array.from({ length: 7 }, () => Array.from({ length: 160 }, () => rand())),
 )
-
-const EP_KEYS = Array.from({ length: 8 }, () => rand())
-
-const CASTLING_KEYS = Array.from({ length: 16 }, () => rand())
 
 const SIDE_KEY = rand()
 
 export const WHITE = 'w'
 export const BLACK = 'b'
 
-export const PAWN = 'p'
-export const KNIGHT = 'n'
-export const BISHOP = 'b'
-export const ROOK = 'r'
-export const QUEEN = 'q'
 export const KING = 'k'
+export const ADVISOR = 'a'
+export const ELEPHANT = 'e'
+export const HORSE = 'h'
+export const ROOK = 'r'
+export const CANNON = 'c'
+export const PAWN = 'p'
 
 export type Color = 'w' | 'b'
-export type PieceSymbol = 'p' | 'n' | 'b' | 'r' | 'q' | 'k'
+export type PieceSymbol = 'p' | 'h' | 'e' | 'r' | 'c' | 'k' | 'a'
 
+// Board: 9 columns (a-i) x 10 ranks (0-9), ranks 0=red back, 9=black back
 // prettier-ignore
 export type Square =
-    'a8' | 'b8' | 'c8' | 'd8' | 'e8' | 'f8' | 'g8' | 'h8' |
-    'a7' | 'b7' | 'c7' | 'd7' | 'e7' | 'f7' | 'g7' | 'h7' |
-    'a6' | 'b6' | 'c6' | 'd6' | 'e6' | 'f6' | 'g6' | 'h6' |
-    'a5' | 'b5' | 'c5' | 'd5' | 'e5' | 'f5' | 'g5' | 'h5' |
-    'a4' | 'b4' | 'c4' | 'd4' | 'e4' | 'f4' | 'g4' | 'h4' |
-    'a3' | 'b3' | 'c3' | 'd3' | 'e3' | 'f3' | 'g3' | 'h3' |
-    'a2' | 'b2' | 'c2' | 'd2' | 'e2' | 'f2' | 'g2' | 'h2' |
-    'a1' | 'b1' | 'c1' | 'd1' | 'e1' | 'f1' | 'g1' | 'h1'
+  'a9' | 'b9' | 'c9' | 'd9' | 'e9' | 'f9' | 'g9' | 'h9' | 'i9' |
+  'a8' | 'b8' | 'c8' | 'd8' | 'e8' | 'f8' | 'g8' | 'h8' | 'i8' |
+  'a7' | 'b7' | 'c7' | 'd7' | 'e7' | 'f7' | 'g7' | 'h7' | 'i7' |
+  'a6' | 'b6' | 'c6' | 'd6' | 'e6' | 'f6' | 'g6' | 'h6' | 'i6' |
+  'a5' | 'b5' | 'c5' | 'd5' | 'e5' | 'f5' | 'g5' | 'h5' | 'i5' |
+  'a4' | 'b4' | 'c4' | 'd4' | 'e4' | 'f4' | 'g4' | 'h4' | 'i4' |
+  'a3' | 'b3' | 'c3' | 'd3' | 'e3' | 'f3' | 'g3' | 'h3' | 'i3' |
+  'a2' | 'b2' | 'c2' | 'd2' | 'e2' | 'f2' | 'g2' | 'h2' | 'i2' |
+  'a1' | 'b1' | 'c1' | 'd1' | 'e1' | 'f1' | 'g1' | 'h1' | 'i1' |
+  'a0' | 'b0' | 'c0' | 'd0' | 'e0' | 'f0' | 'g0' | 'h0' | 'i0'
 
 export const SUFFIX_LIST = ['!', '?', '!!', '!?', '?!', '??'] as const
 
@@ -106,7 +107,7 @@ export const NAG_TO_SYMBOL = {
   15: '⩱', // Black is slightly better
   16: '±', // White is better
   17: '∓', // Black is better
-  18: '+−', // White is winning
+  18: '+{}-', // White is winning
   19: '-+', // Black is winning
   146: 'N', // Novelty
   32: '↑↑', // Development
@@ -123,14 +124,13 @@ export type NAG = number
 
 /**
  * Convert a NAG (Numeric Annotation Glyph) to its text symbol representation.
- * Returns undefined if the NAG has no corresponding symbol.
  */
 export function nagToGlyph(nag: NAG): string | undefined {
   return NAG_TO_SYMBOL[nag as keyof typeof NAG_TO_SYMBOL]
 }
 
 export const DEFAULT_POSITION =
-  'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+  'rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - 0 1'
 
 export type Piece = {
   color: Color
@@ -143,7 +143,6 @@ type InternalMove = {
   to: number
   piece: PieceSymbol
   captured?: PieceSymbol
-  promotion?: PieceSymbol
   flags: number
 }
 
@@ -151,9 +150,6 @@ interface History {
   move: InternalMove
   kings: Record<Color, number>
   turn: Color
-  castling: Record<Color, number>
-  epSquare: number
-  fenEpSquare: number
   halfMoves: number
   moveNumber: number
 }
@@ -164,14 +160,7 @@ export class Move {
   to: Square
   piece: PieceSymbol
   captured?: PieceSymbol
-  promotion?: PieceSymbol
 
-  /**
-   * @deprecated This field is deprecated and will be removed in version 2.0.0.
-   * Please use move descriptor functions instead: `isCapture`, `isPromotion`,
-   * `isEnPassant`, `isKingsideCastle`, `isQueensideCastle`, `isCastle`, and
-   * `isBigPawn`
-   */
   flags: string
 
   san: string
@@ -185,22 +174,18 @@ export class Move {
     before: string,
     after: string,
   ) {
-    const { color, piece, from, to, flags, captured, promotion } = internal
-
-    const fromAlgebraic = algebraic(from)
-    const toAlgebraic = algebraic(to)
+    const { color, piece, from, to, flags, captured } = internal
 
     this.color = color
     this.piece = piece
-    this.from = fromAlgebraic
-    this.to = toAlgebraic
+    this.from = algebraic(from)
+    this.to = algebraic(to)
 
     this.san = san
-    this.lan = fromAlgebraic + toAlgebraic
+    this.lan = algebraic(from) + algebraic(to)
     this.before = before
     this.after = after
 
-    // Build the text representation of the move flags
     this.flags = ''
     for (const flag in BITS) {
       if (BITS[flag] & flags) {
@@ -211,35 +196,10 @@ export class Move {
     if (captured) {
       this.captured = captured
     }
-
-    if (promotion) {
-      this.promotion = promotion
-      this.lan += promotion
-    }
   }
 
   isCapture() {
     return this.flags.indexOf(FLAGS['CAPTURE']) > -1
-  }
-
-  isPromotion() {
-    return this.flags.indexOf(FLAGS['PROMOTION']) > -1
-  }
-
-  isEnPassant() {
-    return this.flags.indexOf(FLAGS['EP_CAPTURE']) > -1
-  }
-
-  isKingsideCastle() {
-    return this.flags.indexOf(FLAGS['KSIDE_CASTLE']) > -1
-  }
-
-  isQueensideCastle() {
-    return this.flags.indexOf(FLAGS['QSIDE_CASTLE']) > -1
-  }
-
-  isBigPawn() {
-    return this.flags.indexOf(FLAGS['BIG_PAWN']) > -1
   }
 
   isNullMove() {
@@ -252,34 +212,26 @@ const EMPTY = -1
 const FLAGS: Record<string, string> = {
   NORMAL: 'n',
   CAPTURE: 'c',
-  BIG_PAWN: 'b',
-  EP_CAPTURE: 'e',
-  PROMOTION: 'p',
-  KSIDE_CASTLE: 'k',
-  QSIDE_CASTLE: 'q',
   NULL_MOVE: '-',
 }
 
 // prettier-ignore
 export const SQUARES: Square[] = [
-  'a8', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8',
-  'a7', 'b7', 'c7', 'd7', 'e7', 'f7', 'g7', 'h7',
-  'a6', 'b6', 'c6', 'd6', 'e6', 'f6', 'g6', 'h6',
-  'a5', 'b5', 'c5', 'd5', 'e5', 'f5', 'g5', 'h5',
-  'a4', 'b4', 'c4', 'd4', 'e4', 'f4', 'g4', 'h4',
-  'a3', 'b3', 'c3', 'd3', 'e3', 'f3', 'g3', 'h3',
-  'a2', 'b2', 'c2', 'd2', 'e2', 'f2', 'g2', 'h2',
-  'a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1'
+  'a9', 'b9', 'c9', 'd9', 'e9', 'f9', 'g9', 'h9', 'i9',
+  'a8', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8', 'i8',
+  'a7', 'b7', 'c7', 'd7', 'e7', 'f7', 'g7', 'h7', 'i7',
+  'a6', 'b6', 'c6', 'd6', 'e6', 'f6', 'g6', 'h6', 'i6',
+  'a5', 'b5', 'c5', 'd5', 'e5', 'f5', 'g5', 'h5', 'i5',
+  'a4', 'b4', 'c4', 'd4', 'e4', 'f4', 'g4', 'h4', 'i4',
+  'a3', 'b3', 'c3', 'd3', 'e3', 'f3', 'g3', 'h3', 'i3',
+  'a2', 'b2', 'c2', 'd2', 'e2', 'f2', 'g2', 'h2', 'i2',
+  'a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1', 'i1',
+  'a0', 'b0', 'c0', 'd0', 'e0', 'f0', 'g0', 'h0', 'i0'
 ]
 
 const BITS: Record<string, number> = {
   NORMAL: 1,
   CAPTURE: 2,
-  BIG_PAWN: 4,
-  EP_CAPTURE: 8,
-  PROMOTION: 16,
-  KSIDE_CASTLE: 32,
-  QSIDE_CASTLE: 64,
   NULL_MOVE: 128,
 }
 
@@ -297,10 +249,10 @@ export const SEVEN_TAG_ROSTER: Record<string, string> = {
 }
 
 /**
- * These nulls are placeholders to fix the order of tags (as they appear in PGN spec); null values will be
- * eliminated in getHeaders()
+ * These nulls are placeholders to fix the order of tags (as they appear in PGN spec);
+ * null values will be eliminated in getHeaders()
  */
-const SUPLEMENTAL_TAGS: Record<string, string | null> = {
+const SUPPLEMENTAL_TAGS: Record<string, string | null> = {
   WhiteTitle: null,
   BlackTitle: null,
   WhiteElo: null,
@@ -335,156 +287,75 @@ const SUPLEMENTAL_TAGS: Record<string, string | null> = {
 
 const HEADER_TEMPLATE = {
   ...SEVEN_TAG_ROSTER,
-  ...SUPLEMENTAL_TAGS,
+  ...SUPPLEMENTAL_TAGS,
 }
 /* eslint-enable @typescript-eslint/naming-convention */
 
-/*
- * NOTES ABOUT 0x88 MOVE GENERATION ALGORITHM
- * ----------------------------------------------------------------------------
- * From https://github.com/jhlywa/chess.js/issues/230
- *
- * A lot of people are confused when they first see the internal representation
- * of chess.js. It uses the 0x88 Move Generation Algorithm which internally
- * stores the board as an 8x16 array. This is purely for efficiency but has a
- * couple of interesting benefits:
- *
- * 1. 0x88 offers a very inexpensive "off the board" check. Bitwise AND (&) any
- *    square with 0x88, if the result is non-zero then the square is off the
- *    board. For example, assuming a knight square A8 (0 in 0x88 notation),
- *    there are 8 possible directions in which the knight can move. These
- *    directions are relative to the 8x16 board and are stored in the
- *    PIECE_OFFSETS map. One possible move is A8 - 18 (up one square, and two
- *    squares to the left - which is off the board). 0 - 18 = -18 & 0x88 = 0x88
- *    (because of two-complement representation of -18). The non-zero result
- *    means the square is off the board and the move is illegal. Take the
- *    opposite move (from A8 to C7), 0 + 18 = 18 & 0x88 = 0. A result of zero
- *    means the square is on the board.
- *
- * 2. The relative distance (or difference) between two squares on a 8x16 board
- *    is unique and can be used to inexpensively determine if a piece on a
- *    square can attack any other arbitrary square. For example, let's see if a
- *    pawn on E7 can attack E2. The difference between E7 (20) - E2 (100) is
- *    -80. We add 119 to make the ATTACKS array index non-negative (because the
- *    worst case difference is A8 - H1 = -119). The ATTACKS array contains a
- *    bitmask of pieces that can attack from that distance and direction.
- *    ATTACKS[-80 + 119=39] gives us 24 or 0b11000 in binary. Look at the
- *    PIECE_MASKS map to determine the mask for a given piece type. In our pawn
- *    example, we would check to see if 24 & 0x1 is non-zero, which it is
- *    not. So, naturally, a pawn on E7 can't attack a piece on E2. However, a
- *    rook can since 24 & 0x8 is non-zero. The only thing left to check is that
- *    there are no blocking pieces between E7 and E2. That's where the RAYS
- *    array comes in. It provides an offset (in this case 16) to add to E7 (20)
- *    to check for blocking pieces. E7 (20) + 16 = E6 (36) + 16 = E5 (52) etc.
- */
+// Board: 10 ranks x 16 files per rank (9 real + 7 padding) = 160 elements
+// Internal index = rank * 16 + file
+// Rank 0 = red's back rank (external "0"), Rank 9 = black's back rank (external "9")
+// File 0 = 'a', ..., File 8 = 'i', files 9-15 are off-board padding
 
 // prettier-ignore
-// eslint-disable-next-line
-const Ox88: Record<Square, number> = {
-  a8:   0, b8:   1, c8:   2, d8:   3, e8:   4, f8:   5, g8:   6, h8:   7,
-  a7:  16, b7:  17, c7:  18, d7:  19, e7:  20, f7:  21, g7:  22, h7:  23,
-  a6:  32, b6:  33, c6:  34, d6:  35, e6:  36, f6:  37, g6:  38, h6:  39,
-  a5:  48, b5:  49, c5:  50, d5:  51, e5:  52, f5:  53, g5:  54, h5:  55,
-  a4:  64, b4:  65, c4:  66, d4:  67, e4:  68, f4:  69, g4:  70, h4:  71,
-  a3:  80, b3:  81, c3:  82, d3:  83, e3:  84, f3:  85, g3:  86, h3:  87,
-  a2:  96, b2:  97, c2:  98, d2:  99, e2: 100, f2: 101, g2: 102, h2: 103,
-  a1: 112, b1: 113, c1: 114, d1: 115, e1: 116, f1: 117, g1: 118, h1: 119
+const XQ_SQUARES: Record<Square, number> = {
+  a9: 144, b9: 145, c9: 146, d9: 147, e9: 148, f9: 149, g9: 150, h9: 151, i9: 152,
+  a8: 128, b8: 129, c8: 130, d8: 131, e8: 132, f8: 133, g8: 134, h8: 135, i8: 136,
+  a7: 112, b7: 113, c7: 114, d7: 115, e7: 116, f7: 117, g7: 118, h7: 119, i7: 120,
+  a6:  96, b6:  97, c6:  98, d6:  99, e6: 100, f6: 101, g6: 102, h6: 103, i6: 104,
+  a5:  80, b5:  81, c5:  82, d5:  83, e5:  84, f5:  85, g5:  86, h5:  87, i5:  88,
+  a4:  64, b4:  65, c4:  66, d4:  67, e4:  68, f4:  69, g4:  70, h4:  71, i4:  72,
+  a3:  48, b3:  49, c3:  50, d3:  51, e3:  52, f3:  53, g3:  54, h3:  55, i3:  56,
+  a2:  32, b2:  33, c2:  34, d2:  35, e2:  36, f2:  37, g2:  38, h2:  39, i2:  40,
+  a1:  16, b1:  17, c1:  18, d1:  19, e1:  20, f1:  21, g1:  22, h1:  23, i1:  24,
+  a0:   0, b0:   1, c0:   2, d0:   3, e0:   4, f0:   5, g0:   6, h0:   7, i0:   8,
 }
 
-const PAWN_OFFSETS = {
-  b: [16, 32, 17, 15],
-  w: [-16, -32, -17, -15],
-}
-
-const PIECE_OFFSETS = {
-  n: [-18, -33, -31, -14, 18, 33, 31, 14],
-  b: [-17, -15, 17, 15],
+// Piece offsets in the 16-per-rank system
+const PIECE_OFFSETS: Record<PieceSymbol, number[]> = {
+  k: [-16, 1, 16, -1],
+  a: [-17, -15, 15, 17],
+  e: [-34, -30, 30, 34],
+  h: [-33, -31, -18, -14, 14, 18, 31, 33],
   r: [-16, 1, 16, -1],
-  q: [-17, -16, -15, 1, 17, 16, 15, -1],
-  k: [-17, -16, -15, 1, 17, 16, 15, -1],
+  c: [-16, 1, 16, -1],
+  p: [],
 }
 
-// prettier-ignore
-const ATTACKS = [
-  20, 0, 0, 0, 0, 0, 0, 24,  0, 0, 0, 0, 0, 0,20, 0,
-   0,20, 0, 0, 0, 0, 0, 24,  0, 0, 0, 0, 0,20, 0, 0,
-   0, 0,20, 0, 0, 0, 0, 24,  0, 0, 0, 0,20, 0, 0, 0,
-   0, 0, 0,20, 0, 0, 0, 24,  0, 0, 0,20, 0, 0, 0, 0,
-   0, 0, 0, 0,20, 0, 0, 24,  0, 0,20, 0, 0, 0, 0, 0,
-   0, 0, 0, 0, 0,20, 2, 24,  2,20, 0, 0, 0, 0, 0, 0,
-   0, 0, 0, 0, 0, 2,53, 56, 53, 2, 0, 0, 0, 0, 0, 0,
-  24,24,24,24,24,24,56,  0, 56,24,24,24,24,24,24, 0,
-   0, 0, 0, 0, 0, 2,53, 56, 53, 2, 0, 0, 0, 0, 0, 0,
-   0, 0, 0, 0, 0,20, 2, 24,  2,20, 0, 0, 0, 0, 0, 0,
-   0, 0, 0, 0,20, 0, 0, 24,  0, 0,20, 0, 0, 0, 0, 0,
-   0, 0, 0,20, 0, 0, 0, 24,  0, 0, 0,20, 0, 0, 0, 0,
-   0, 0,20, 0, 0, 0, 0, 24,  0, 0, 0, 0,20, 0, 0, 0,
-   0,20, 0, 0, 0, 0, 0, 24,  0, 0, 0, 0, 0,20, 0, 0,
-  20, 0, 0, 0, 0, 0, 0, 24,  0, 0, 0, 0, 0, 0,20
-];
-
-// prettier-ignore
-const RAYS = [
-   17,  0,  0,  0,  0,  0,  0, 16,  0,  0,  0,  0,  0,  0, 15, 0,
-    0, 17,  0,  0,  0,  0,  0, 16,  0,  0,  0,  0,  0, 15,  0, 0,
-    0,  0, 17,  0,  0,  0,  0, 16,  0,  0,  0,  0, 15,  0,  0, 0,
-    0,  0,  0, 17,  0,  0,  0, 16,  0,  0,  0, 15,  0,  0,  0, 0,
-    0,  0,  0,  0, 17,  0,  0, 16,  0,  0, 15,  0,  0,  0,  0, 0,
-    0,  0,  0,  0,  0, 17,  0, 16,  0, 15,  0,  0,  0,  0,  0, 0,
-    0,  0,  0,  0,  0,  0, 17, 16, 15,  0,  0,  0,  0,  0,  0, 0,
-    1,  1,  1,  1,  1,  1,  1,  0, -1, -1,  -1,-1, -1, -1, -1, 0,
-    0,  0,  0,  0,  0,  0,-15,-16,-17,  0,  0,  0,  0,  0,  0, 0,
-    0,  0,  0,  0,  0,-15,  0,-16,  0,-17,  0,  0,  0,  0,  0, 0,
-    0,  0,  0,  0,-15,  0,  0,-16,  0,  0,-17,  0,  0,  0,  0, 0,
-    0,  0,  0,-15,  0,  0,  0,-16,  0,  0,  0,-17,  0,  0,  0, 0,
-    0,  0,-15,  0,  0,  0,  0,-16,  0,  0,  0,  0,-17,  0,  0, 0,
-    0,-15,  0,  0,  0,  0,  0,-16,  0,  0,  0,  0,  0,-17,  0, 0,
-  -15,  0,  0,  0,  0,  0,  0,-16,  0,  0,  0,  0,  0,  0,-17
-];
-
-const PIECE_MASKS = { p: 0x1, n: 0x2, b: 0x4, r: 0x8, q: 0x10, k: 0x20 }
-
-const SYMBOLS = 'pnbrqkPNBRQK'
-
-const PROMOTIONS: PieceSymbol[] = [KNIGHT, BISHOP, ROOK, QUEEN]
-
-const RANK_1 = 7
-const RANK_2 = 6
-/*
- * const RANK_3 = 5
- * const RANK_4 = 4
- * const RANK_5 = 3
- * const RANK_6 = 2
- */
-const RANK_7 = 1
-const RANK_8 = 0
-
-const SIDES = {
-  [KING]: BITS.KSIDE_CASTLE,
-  [QUEEN]: BITS.QSIDE_CASTLE,
+// Horse leg squares: the square that must be empty for each horse offset
+const HORSE_LEGS: Record<number, number> = {
+  [-33]: -16,
+  [-31]: -16,
+  [-18]: -1,
+  [-14]: 1,
+  [14]: -1,
+  [18]: 1,
+  [31]: 16,
+  [33]: 16,
 }
 
-const ROOKS = {
-  w: [
-    { square: Ox88.a1, flag: BITS.QSIDE_CASTLE },
-    { square: Ox88.h1, flag: BITS.KSIDE_CASTLE },
-  ],
-  b: [
-    { square: Ox88.a8, flag: BITS.QSIDE_CASTLE },
-    { square: Ox88.h8, flag: BITS.KSIDE_CASTLE },
-  ],
+// Elephant eye squares: the diagonal midpoint that must be empty for each elephant offset
+const ELEPHANT_EYES: Record<number, number> = {
+  [-34]: -17,
+  [-30]: -15,
+  [30]: 15,
+  [34]: 17,
 }
 
-const SECOND_RANK = { b: RANK_7, w: RANK_2 }
+const SYMBOLS = 'phreckaPHRECKA'
 
 const SAN_NULLMOVE = '--'
 
-// Extracts the zero-based rank of an 0x88 square.
+// Check if a square index is off the board
+function offBoard(square: number): boolean {
+  return square < 0 || (square & 0xf) >= 9 || (square >> 4) >= 10
+}
+
+// Extracts the zero-based rank of a square index.
 function rank(square: number): number {
   return square >> 4
 }
 
-// Extracts the zero-based file of an 0x88 square.
+// Extracts the zero-based file of a square index.
 function file(square: number): number {
   return square & 0xf
 }
@@ -493,20 +364,32 @@ function isDigit(c: string): boolean {
   return '0123456789'.indexOf(c) !== -1
 }
 
-// Converts a 0x88 square to algebraic notation.
+// Converts an internal square index to algebraic notation (ICCS: a0-i9).
 function algebraic(square: number): Square {
   const f = file(square)
   const r = rank(square)
-  return ('abcdefgh'.substring(f, f + 1) +
-    '87654321'.substring(r, r + 1)) as Square
+  return (String.fromCharCode(97 + f) + r) as Square
 }
 
 function swapColor(color: Color): Color {
   return color === WHITE ? BLACK : WHITE
 }
 
+// Check if a given rank/file is within the palace for a given color
+function inPalace(color: Color, r: number, f: number): boolean {
+  if (f < 3 || f > 5) return false
+  if (color === WHITE) return r >= 0 && r <= 2
+  return r >= 7 && r <= 9
+}
+
+// Check if a soldier has crossed the river
+function crossedRiver(color: Color, r: number): boolean {
+  if (color === WHITE) return r >= 5
+  return r <= 4
+}
+
 export function validateFen(fen: string): { ok: boolean; error?: string } {
-  // 1st criterion: 6 space-seperated fields?
+  // 1st criterion: 6 space-separated fields?
   const tokens = fen.split(/\s+/)
   if (tokens.length !== 6) {
     return {
@@ -515,7 +398,7 @@ export function validateFen(fen: string): { ok: boolean; error?: string } {
     }
   }
 
-  // 2nd criterion: move number field is a integer value > 0?
+  // 2nd criterion: move number field is an integer value > 0?
   const moveNumber = parseInt(tokens[5], 10)
   if (isNaN(moveNumber) || moveNumber <= 0) {
     return {
@@ -534,33 +417,32 @@ export function validateFen(fen: string): { ok: boolean; error?: string } {
     }
   }
 
-  // 4th criterion: 4th field is a valid e.p.-string?
-  if (!/^(-|[abcdefgh][36])$/.test(tokens[3])) {
-    return { ok: false, error: 'Invalid FEN: en-passant square is invalid' }
+  // 4th criterion: 4th field is a valid e.p.-string? (always '-' for Xiangqi)
+  if (tokens[3] !== '-') {
+    return { ok: false, error: 'Invalid FEN: en-passant square must be "-"' }
   }
 
-  // 5th criterion: 3th field is a valid castle-string?
-  if (/[^kKqQ-]/.test(tokens[2])) {
-    return { ok: false, error: 'Invalid FEN: castling availability is invalid' }
+  // 5th criterion: 3rd field is a valid castle-string? (always '-' for Xiangqi)
+  if (tokens[2] !== '-') {
+    return { ok: false, error: 'Invalid FEN: castling availability must be "-"' }
   }
 
-  // 6th criterion: 2nd field is "w" (white) or "b" (black)?
+  // 6th criterion: 2nd field is "w" (white/red) or "b" (black)?
   if (!/^(w|b)$/.test(tokens[1])) {
     return { ok: false, error: 'Invalid FEN: side-to-move is invalid' }
   }
 
-  // 7th criterion: 1st field contains 8 rows?
+  // 7th criterion: 1st field contains 10 rows?
   const rows = tokens[0].split('/')
-  if (rows.length !== 8) {
+  if (rows.length !== 10) {
     return {
       ok: false,
-      error: "Invalid FEN: piece data does not contain 8 '/'-delimited rows",
+      error: "Invalid FEN: piece data does not contain 10 '/'-delimited rows",
     }
   }
 
-  // 8th criterion: every row is valid?
+  // 8th criterion: every row has exactly 9 files
   for (let i = 0; i < rows.length; i++) {
-    // check for right sum of fields AND not two numbers in succession
     let sumFields = 0
     let previousWasNumber = false
 
@@ -575,7 +457,7 @@ export function validateFen(fen: string): { ok: boolean; error?: string } {
         sumFields += parseInt(rows[i][k], 10)
         previousWasNumber = true
       } else {
-        if (!/^[prnbqkPRNBQK]$/.test(rows[i][k])) {
+        if (!/^[prheckaPRHECKA]$/.test(rows[i][k])) {
           return {
             ok: false,
             error: 'Invalid FEN: piece data is invalid (invalid piece)',
@@ -585,7 +467,7 @@ export function validateFen(fen: string): { ok: boolean; error?: string } {
         previousWasNumber = false
       }
     }
-    if (sumFields !== 8) {
+    if (sumFields !== 9) {
       return {
         ok: false,
         error: 'Invalid FEN: piece data is invalid (too many squares in rank)',
@@ -593,17 +475,9 @@ export function validateFen(fen: string): { ok: boolean; error?: string } {
     }
   }
 
-  // 9th criterion: is en-passant square legal?
-  if (
-    (tokens[3][1] == '3' && tokens[1] == 'w') ||
-    (tokens[3][1] == '6' && tokens[1] == 'b')
-  ) {
-    return { ok: false, error: 'Invalid FEN: illegal en-passant square' }
-  }
-
-  // 10th criterion: does chess position contain exact two kings?
+  // 9th criterion: exactly one king per side
   const kings = [
-    { color: 'white', regex: /K/g },
+    { color: 'red', regex: /K/g },
     { color: 'black', regex: /k/g },
   ]
 
@@ -617,71 +491,17 @@ export function validateFen(fen: string): { ok: boolean; error?: string } {
     }
   }
 
-  // 11th criterion: are any pawns on the first or eighth rows?
+  // 10th criterion: no pawns on the first or last ranks
   if (
-    Array.from(rows[0] + rows[7]).some((char) => char.toUpperCase() === 'P')
+    Array.from(rows[0] + rows[9]).some((char) => char.toUpperCase() === 'P')
   ) {
     return {
       ok: false,
-      error: 'Invalid FEN: some pawns are on the edge rows',
+      error: 'Invalid FEN: pawns cannot be on the edge ranks',
     }
   }
 
   return { ok: true }
-}
-
-// this function is used to uniquely identify ambiguous moves
-function getDisambiguator(move: InternalMove, moves: InternalMove[]): string {
-  const from = move.from
-  const to = move.to
-  const piece = move.piece
-
-  let ambiguities = 0
-  let sameRank = 0
-  let sameFile = 0
-
-  for (let i = 0, len = moves.length; i < len; i++) {
-    const ambigFrom = moves[i].from
-    const ambigTo = moves[i].to
-    const ambigPiece = moves[i].piece
-
-    /*
-     * if a move of the same piece type ends on the same to square, we'll need
-     * to add a disambiguator to the algebraic notation
-     */
-    if (piece === ambigPiece && from !== ambigFrom && to === ambigTo) {
-      ambiguities++
-
-      if (rank(from) === rank(ambigFrom)) {
-        sameRank++
-      }
-
-      if (file(from) === file(ambigFrom)) {
-        sameFile++
-      }
-    }
-  }
-
-  if (ambiguities > 0) {
-    if (sameRank > 0 && sameFile > 0) {
-      /*
-       * if there exists a similar moving piece on the same rank and file as
-       * the move in question, use the square as the disambiguator
-       */
-      return algebraic(from)
-    } else if (sameFile > 0) {
-      /*
-       * if the moving piece rests on the same file, use the rank symbol as the
-       * disambiguator
-       */
-      return algebraic(from).charAt(1)
-    } else {
-      // else use the file symbol
-      return algebraic(from).charAt(0)
-    }
-  }
-
-  return ''
 }
 
 function addMove(
@@ -690,71 +510,54 @@ function addMove(
   from: number,
   to: number,
   piece: PieceSymbol,
-  captured: PieceSymbol | undefined = undefined,
+  captured?: PieceSymbol,
   flags: number = BITS.NORMAL,
 ) {
-  const r = rank(to)
-
-  if (piece === PAWN && (r === RANK_1 || r === RANK_8)) {
-    for (let i = 0; i < PROMOTIONS.length; i++) {
-      const promotion = PROMOTIONS[i]
-      moves.push({
-        color,
-        from,
-        to,
-        piece,
-        captured,
-        promotion,
-        flags: flags | BITS.PROMOTION,
-      })
-    }
-  } else {
-    moves.push({
-      color,
-      from,
-      to,
-      piece,
-      captured,
-      flags,
-    })
-  }
+  moves.push({
+    color,
+    from,
+    to,
+    piece,
+    captured,
+    flags,
+  })
 }
 
 function inferPieceType(san: string): PieceSymbol | undefined {
   let pieceType = san.charAt(0)
-  if (pieceType >= 'a' && pieceType <= 'h') {
-    const matches = san.match(/[a-h]\d.*[a-h]\d/)
+  if (pieceType >= 'a' && pieceType <= 'i') {
+    const matches = san.match(/[a-i]\d.*[a-i]\d/)
     if (matches) {
-      return undefined
+      return undefined // ICCS coordinate notation - piece type from board
     }
     return PAWN
   }
   pieceType = pieceType.toLowerCase()
-  if (pieceType === 'o') {
-    return KING
-  }
+  if (pieceType === 'k') return KING
+  if (pieceType === 'a') return ADVISOR
+  if (pieceType === 'e') return ELEPHANT
+  if (pieceType === 'h') return HORSE
+  if (pieceType === 'r') return ROOK
+  if (pieceType === 'c') return CANNON
   return pieceType as PieceSymbol
 }
 
 // parses all of the decorators out of a SAN string
 function strippedSan(move: string): string {
-  return move.replace(/=/, '').replace(/[+#]?[?!]*$/, '')
+  return move.replace(/[+#]?[?!]*$/, '')
 }
 
 export class Chess {
-  private _board = new Array<Piece>(128)
+  private _board = new Array<Piece>(160)
   private _turn: Color = WHITE
   private _header: Record<string, string | null> = {}
   private _kings: Record<Color, number> = { w: EMPTY, b: EMPTY }
-  private _epSquare = -1
-  private _fenEpSquare = -1
   private _halfMoves = 0
   private _moveNumber = 0
   private _history: History[] = []
   private _comments: Record<string, string> = {}
   private _suffixes: Record<string, Suffix> = {}
   private _nags: Record<string, NAG[]> = {}
-  private _castling: Record<Color, number> = { w: 0, b: 0 }
 
   private _hash = 0n
 
@@ -769,12 +572,9 @@ export class Chess {
   }
 
   clear({ preserveHeaders = false } = {}) {
-    this._board = new Array<Piece>(128)
+    this._board = new Array<Piece>(160)
     this._kings = { w: EMPTY, b: EMPTY }
     this._turn = WHITE
-    this._castling = { w: 0, b: 0 }
-    this._epSquare = EMPTY
-    this._fenEpSquare = EMPTY
     this._halfMoves = 0
     this._moveNumber = 1
     this._history = []
@@ -783,16 +583,14 @@ export class Chess {
     this._hash = this._computeHash()
     this._positionCount = new Map<bigint, number>()
 
-    /*
-     * Delete the SetUp and FEN headers (if preserved), the board is empty and
-     * these headers don't make sense in this state. They'll get added later
-     * via .load() or .put()
-     */
     this._header['SetUp'] = null
     this._header['FEN'] = null
   }
 
-  load(fen: string, { skipValidation = false, preserveHeaders = false } = {}) {
+  load(
+    fen: string,
+    { skipValidation = false, preserveHeaders = false } = {},
+  ) {
     let tokens = fen.split(/\s+/)
 
     // append commonly omitted fen tokens
@@ -811,7 +609,8 @@ export class Chess {
     }
 
     const position = tokens[0]
-    let square = 0
+    let rank = 9 // FEN starts from top (rank 9)
+    let file = 0
 
     this.clear({ preserveHeaders })
 
@@ -819,38 +618,22 @@ export class Chess {
       const piece = position.charAt(i)
 
       if (piece === '/') {
-        square += 8
+        rank--
+        file = 0
       } else if (isDigit(piece)) {
-        square += parseInt(piece, 10)
+        file += parseInt(piece, 10)
       } else {
         const color = piece < 'a' ? WHITE : BLACK
         this._put(
           { type: piece.toLowerCase() as PieceSymbol, color },
-          algebraic(square),
+          algebraic(rank * 16 + file),
         )
-        square++
+        file++
       }
     }
 
     this._turn = tokens[1] as Color
 
-    if (tokens[2].indexOf('K') > -1) {
-      this._castling.w |= BITS.KSIDE_CASTLE
-    }
-    if (tokens[2].indexOf('Q') > -1) {
-      this._castling.w |= BITS.QSIDE_CASTLE
-    }
-    if (tokens[2].indexOf('k') > -1) {
-      this._castling.b |= BITS.KSIDE_CASTLE
-    }
-    if (tokens[2].indexOf('q') > -1) {
-      this._castling.b |= BITS.QSIDE_CASTLE
-    }
-
-    this._updateCastlingRights()
-
-    this._epSquare = tokens[3] === '-' ? EMPTY : Ox88[tokens[3] as Square]
-    this._fenEpSquare = this._epSquare
     this._halfMoves = parseInt(tokens[4], 10)
     this._moveNumber = parseInt(tokens[5], 10)
 
@@ -859,111 +642,35 @@ export class Chess {
     this._incPositionCount()
   }
 
-  fen({
-    forceEnpassantSquare = false,
-  }: { forceEnpassantSquare?: boolean } = {}) {
-    let empty = 0
+  fen() {
     let fen = ''
 
-    for (let i = Ox88.a8; i <= Ox88.h1; i++) {
-      if (this._board[i]) {
-        if (empty > 0) {
-          fen += empty
-          empty = 0
-        }
-        const { color, type: piece } = this._board[i]
-
-        fen += color === WHITE ? piece.toUpperCase() : piece.toLowerCase()
-      } else {
-        empty++
-      }
-
-      if ((i + 1) & 0x88) {
-        if (empty > 0) {
-          fen += empty
-        }
-
-        if (i !== Ox88.h1) {
-          fen += '/'
-        }
-
-        empty = 0
-        i += 8
-      }
-    }
-
-    let castling = ''
-    if (this._castling[WHITE] & BITS.KSIDE_CASTLE) {
-      castling += 'K'
-    }
-    if (this._castling[WHITE] & BITS.QSIDE_CASTLE) {
-      castling += 'Q'
-    }
-    if (this._castling[BLACK] & BITS.KSIDE_CASTLE) {
-      castling += 'k'
-    }
-    if (this._castling[BLACK] & BITS.QSIDE_CASTLE) {
-      castling += 'q'
-    }
-
-    // do we have an empty castling flag?
-    castling = castling || '-'
-
-    let epSquare = '-'
-    /*
-     * only print the ep square if en passant is a valid move (pawn is present
-     * and ep capture is not pinned)
-     */
-    if (this._fenEpSquare !== EMPTY) {
-      if (forceEnpassantSquare) {
-        epSquare = algebraic(this._fenEpSquare)
-      } else if (this._epSquare !== EMPTY) {
-        const bigPawnSquare = this._epSquare + (this._turn === WHITE ? 16 : -16)
-        const squares = [bigPawnSquare + 1, bigPawnSquare - 1]
-
-        for (const square of squares) {
-          // is the square off the board?
-          if (square & 0x88) {
-            continue
+    for (let r = 9; r >= 0; r--) {
+      let empty = 0
+      for (let f = 0; f < 9; f++) {
+        const i = r * 16 + f
+        if (this._board[i]) {
+          if (empty > 0) {
+            fen += empty
+            empty = 0
           }
-
-          const color = this._turn
-
-          // is there a pawn that can capture the epSquare?
-          if (
-            this._board[square]?.color === color &&
-            this._board[square]?.type === PAWN
-          ) {
-            // if the pawn makes an ep capture, does it leave its king in check?
-            this._makeMove({
-              color,
-              from: square,
-              to: this._epSquare,
-              piece: PAWN,
-              captured: PAWN,
-              flags: BITS.EP_CAPTURE,
-            })
-            const isLegal = !this._isKingAttacked(color)
-            this._undoMove()
-
-            // if ep is legal, break and set the ep square in the FEN output
-            if (isLegal) {
-              epSquare = algebraic(this._epSquare)
-              break
-            }
-          }
+          const { color, type: piece } = this._board[i]
+          fen += color === WHITE ? piece.toUpperCase() : piece.toLowerCase()
+        } else {
+          empty++
         }
+      }
+      if (empty > 0) {
+        fen += empty
+      }
+      if (r > 0) {
+        fen += '/'
       }
     }
 
-    return [
-      fen,
-      this._turn,
-      castling,
-      epSquare,
-      this._halfMoves,
-      this._moveNumber,
-    ].join(' ')
+    return [fen, this._turn, '-', '-', this._halfMoves, this._moveNumber].join(
+      ' ',
+    )
   }
 
   private _pieceKey(i: number) {
@@ -980,32 +687,23 @@ export class Chess {
 
     const typeIndex = {
       p: 0,
-      n: 1,
-      b: 2,
+      h: 1,
+      e: 2,
       r: 3,
-      q: 4,
+      c: 4,
       k: 5,
+      a: 6,
     }[type]
 
     return PIECE_KEYS[colorIndex][typeIndex][i]
   }
 
-  private _epKey() {
-    return this._epSquare === EMPTY ? 0n : EP_KEYS[this._epSquare & 7]
-  }
-
-  private _castlingKey() {
-    const index = (this._castling.w >> 5) | (this._castling.b >> 3)
-    return CASTLING_KEYS[index]
-  }
-
   private _computeHash() {
     let hash = 0n
 
-    for (let i = Ox88.a8; i <= Ox88.h1; i++) {
-      // did we run off the end of the board
-      if (i & 0x88) {
-        i += 7
+    for (let i = XQ_SQUARES.a0; i <= XQ_SQUARES.i9; i++) {
+      if ((i & 0xf) >= 9) {
+        i += 6
         continue
       }
 
@@ -1013,9 +711,6 @@ export class Chess {
         hash ^= this._pieceKey(i)
       }
     }
-
-    hash ^= this._epKey()
-    hash ^= this._castlingKey()
 
     if (this._turn === 'b') {
       hash ^= SIDE_KEY
@@ -1026,9 +721,6 @@ export class Chess {
 
   /*
    * Called when the initial board setup is changed with put() or remove().
-   * modifies the SetUp and FEN properties of the header object. If the FEN
-   * is equal to the default position, the SetUp and FEN are deleted the setup
-   * is only updated if history.length is zero, ie moves haven't been made.
    */
   private _updateSetup(fen: string) {
     if (this._history.length > 0) return
@@ -1050,24 +742,21 @@ export class Chess {
   }
 
   get(square: Square): Piece | undefined {
-    return this._board[Ox88[square]]
+    return this._board[XQ_SQUARES[square]]
   }
 
   findPiece(piece: Piece): Square[] {
     const squares: Square[] = []
-    for (let i = Ox88.a8; i <= Ox88.h1; i++) {
-      // did we run off the end of the board
-      if (i & 0x88) {
-        i += 7
+    for (let i = XQ_SQUARES.a0; i <= XQ_SQUARES.i9; i++) {
+      if ((i & 0xf) >= 9) {
+        i += 6
         continue
       }
 
-      // if empty square or wrong color
       if (!this._board[i] || this._board[i]?.color !== piece.color) {
         continue
       }
 
-      // check if square contains the requested piece
       if (
         this._board[i].color === piece.color &&
         this._board[i].type === piece.type
@@ -1084,8 +773,6 @@ export class Chess {
     square: Square,
   ): boolean {
     if (this._put({ type, color }, square)) {
-      this._updateCastlingRights()
-      this._updateEnPassantSquare()
       this._updateSetup(this.fen())
       return true
     }
@@ -1108,11 +795,11 @@ export class Chess {
     }
 
     // check for valid square
-    if (!(square in Ox88)) {
+    if (!(square in XQ_SQUARES)) {
       return false
     }
 
-    const sq = Ox88[square]
+    const sq = XQ_SQUARES[square]
 
     // don't let the user place more than one king
     if (
@@ -1124,7 +811,7 @@ export class Chess {
 
     const currentPieceOnSquare = this._board[sq]
 
-    // if one of the kings will be replaced by the piece from args, set the `_kings` respective entry to `EMPTY`
+    // if one of the kings will be replaced, clear the kings entry
     if (currentPieceOnSquare && currentPieceOnSquare.type === KING) {
       this._kings[currentPieceOnSquare.color] = EMPTY
     }
@@ -1145,92 +832,30 @@ export class Chess {
 
   remove(square: Square): Piece | undefined {
     const piece = this.get(square)
-    this._clear(Ox88[square])
+    this._clear(XQ_SQUARES[square])
     if (piece && piece.type === KING) {
       this._kings[piece.color] = EMPTY
     }
 
-    this._updateCastlingRights()
-    this._updateEnPassantSquare()
     this._updateSetup(this.fen())
 
     return piece
   }
 
-  private _updateCastlingRights() {
-    this._hash ^= this._castlingKey()
+  // Check if the two kings face each other on the same file with nothing between
+  private _isFlyingGeneral(): boolean {
+    const wk = this._kings['w']
+    const bk = this._kings['b']
+    if (wk === EMPTY || bk === EMPTY) return false
+    if (file(wk) !== file(bk)) return false
 
-    const whiteKingInPlace =
-      this._board[Ox88.e1]?.type === KING &&
-      this._board[Ox88.e1]?.color === WHITE
-    const blackKingInPlace =
-      this._board[Ox88.e8]?.type === KING &&
-      this._board[Ox88.e8]?.color === BLACK
-
-    if (
-      !whiteKingInPlace ||
-      this._board[Ox88.a1]?.type !== ROOK ||
-      this._board[Ox88.a1]?.color !== WHITE
-    ) {
-      this._castling.w &= ~BITS.QSIDE_CASTLE
+    const minRank = Math.min(rank(wk), rank(bk))
+    const maxRank = Math.max(rank(wk), rank(bk))
+    const f = file(wk)
+    for (let r = minRank + 1; r < maxRank; r++) {
+      if (this._board[r * 16 + f]) return false
     }
-
-    if (
-      !whiteKingInPlace ||
-      this._board[Ox88.h1]?.type !== ROOK ||
-      this._board[Ox88.h1]?.color !== WHITE
-    ) {
-      this._castling.w &= ~BITS.KSIDE_CASTLE
-    }
-
-    if (
-      !blackKingInPlace ||
-      this._board[Ox88.a8]?.type !== ROOK ||
-      this._board[Ox88.a8]?.color !== BLACK
-    ) {
-      this._castling.b &= ~BITS.QSIDE_CASTLE
-    }
-
-    if (
-      !blackKingInPlace ||
-      this._board[Ox88.h8]?.type !== ROOK ||
-      this._board[Ox88.h8]?.color !== BLACK
-    ) {
-      this._castling.b &= ~BITS.KSIDE_CASTLE
-    }
-
-    this._hash ^= this._castlingKey()
-  }
-
-  private _updateEnPassantSquare() {
-    if (this._epSquare === EMPTY) {
-      return
-    }
-
-    const startSquare = this._epSquare + (this._turn === WHITE ? -16 : 16)
-    const currentSquare = this._epSquare + (this._turn === WHITE ? 16 : -16)
-    const attackers = [currentSquare + 1, currentSquare - 1]
-
-    if (
-      this._board[startSquare] !== null ||
-      this._board[this._epSquare] !== null ||
-      this._board[currentSquare]?.color !== swapColor(this._turn) ||
-      this._board[currentSquare]?.type !== PAWN
-    ) {
-      this._hash ^= this._epKey()
-      this._epSquare = EMPTY
-      return
-    }
-
-    const canCapture = (square: number) =>
-      !(square & 0x88) &&
-      this._board[square]?.color === this._turn &&
-      this._board[square]?.type === PAWN
-
-    if (!attackers.some(canCapture)) {
-      this._hash ^= this._epKey()
-      this._epSquare = EMPTY
-    }
+    return true
   }
 
   private _attacked(color: Color, square: number): boolean
@@ -1238,72 +863,160 @@ export class Chess {
   private _attacked(color: Color, square: number, verbose: true): Square[]
   private _attacked(color: Color, square: number, verbose?: boolean) {
     const attackers: Square[] = []
-    for (let i = Ox88.a8; i <= Ox88.h1; i++) {
-      // did we run off the end of the board
-      if (i & 0x88) {
-        i += 7
+    const targetFile = file(square)
+    const targetRank = rank(square)
+
+    for (let i = XQ_SQUARES.a0; i <= XQ_SQUARES.i9; i++) {
+      if ((i & 0xf) >= 9) {
+        i += 6
         continue
       }
 
-      // if empty square or wrong color
       if (this._board[i] === undefined || this._board[i].color !== color) {
         continue
       }
 
       const piece = this._board[i]
-      const difference = i - square
+      const fromFile = file(i)
+      const fromRank = rank(i)
+      const df = targetFile - fromFile
+      const dr = targetRank - fromRank
+      const absDf = Math.abs(df)
+      const absDr = Math.abs(dr)
 
-      // skip - to/from square are the same
-      if (difference === 0) {
-        continue
-      }
+      let attacks = false
 
-      const index = difference + 119
-
-      if (ATTACKS[index] & PIECE_MASKS[piece.type]) {
-        if (piece.type === PAWN) {
+      switch (piece.type) {
+        case KING:
+          // One step orthogonal, within palace
           if (
-            (difference > 0 && piece.color === WHITE) ||
-            (difference <= 0 && piece.color === BLACK)
+            inPalace(color, targetRank, targetFile) &&
+            ((absDf === 1 && dr === 0) || (df === 0 && absDr === 1))
           ) {
-            if (!verbose) {
-              return true
-            } else {
-              attackers.push(algebraic(i))
+            attacks = true
+          }
+          break
+
+        case ADVISOR:
+          // One step diagonal, within palace
+          if (
+            inPalace(color, targetRank, targetFile) &&
+            absDf === 1 &&
+            absDr === 1
+          ) {
+            attacks = true
+          }
+          break
+
+        case ELEPHANT: {
+          // Two steps diagonal (田), cannot cross river, check eye
+          if (absDf === 2 && absDr === 2) {
+            // Check eye blocking
+            const eyeFile = fromFile + (df > 0 ? 1 : -1)
+            const eyeRank = fromRank + (dr > 0 ? 1 : -1)
+            const eyeSq = eyeRank * 16 + eyeFile
+            if (!this._board[eyeSq]) {
+              attacks = true
             }
           }
-          continue
+          break
         }
 
-        // if the piece is a knight or a king
-        if (piece.type === 'n' || piece.type === 'k') {
-          if (!verbose) {
-            return true
-          } else {
-            attackers.push(algebraic(i))
-            continue
+        case HORSE: {
+          // L-shape with leg blocking check
+          if (
+            (absDf === 2 && absDr === 1) ||
+            (absDf === 1 && absDr === 2)
+          ) {
+            // Determine leg square
+            let legFile: number, legRank: number
+            if (absDf === 2) {
+              legFile = fromFile + (df > 0 ? 1 : -1)
+              legRank = fromRank
+            } else {
+              legFile = fromFile
+              legRank = fromRank + (dr > 0 ? 1 : -1)
+            }
+            const legSq = legRank * 16 + legFile
+            if (!this._board[legSq]) {
+              attacks = true
+            }
           }
+          break
         }
 
-        const offset = RAYS[index]
-        let j = i + offset
-
-        let blocked = false
-        while (j !== square) {
-          if (this._board[j] != null) {
-            blocked = true
-            break
+        case ROOK:
+          // Same file or same rank, no pieces between
+          if (df === 0 || dr === 0) {
+            let blocked = false
+            if (df === 0) {
+              const step = dr > 0 ? 16 : -16
+              let j = i + step
+              while (j !== square) {
+                if (this._board[j]) {
+                  blocked = true
+                  break
+                }
+                j += step
+              }
+            } else {
+              const step = df > 0 ? 1 : -1
+              let j = i + step
+              while (j !== square) {
+                if (this._board[j]) {
+                  blocked = true
+                  break
+                }
+                j += step
+              }
+            }
+            if (!blocked) attacks = true
           }
-          j += offset
+          break
+
+        case CANNON:
+          // Same file or same rank, exactly one piece between
+          if (df === 0 || dr === 0) {
+            let pieceCount = 0
+            if (df === 0) {
+              const step = dr > 0 ? 16 : -16
+              let j = i + step
+              while (j !== square) {
+                if (this._board[j]) pieceCount++
+                j += step
+              }
+            } else {
+              const step = df > 0 ? 1 : -1
+              let j = i + step
+              while (j !== square) {
+                if (this._board[j]) pieceCount++
+                j += step
+              }
+            }
+            if (pieceCount === 1) attacks = true
+          }
+          break
+
+        case PAWN: {
+          // Forward one step; after crossing river, also sideways
+          const forward = color === WHITE ? 16 : -16
+          if (targetRank === fromRank && absDf === 1) {
+            // Sideways - only after crossing river
+            if (crossedRiver(color, fromRank)) {
+              attacks = true
+            }
+          } else if (targetFile === fromFile && targetRank === fromRank + (forward >> 4)) {
+            attacks = true
+          }
+          break
         }
+      }
 
-        if (!blocked) {
-          if (!verbose) {
-            return true
-          } else {
-            attackers.push(algebraic(i))
-            continue
-          }
+      if (attacks) {
+        if (!verbose) {
+          return true
+        } else {
+          attackers.push(algebraic(i))
         }
       }
     }
@@ -1317,9 +1030,9 @@ export class Chess {
 
   attackers(square: Square, attackedBy?: Color): Square[] {
     if (!attackedBy) {
-      return this._attacked(this._turn, Ox88[square], true)
+      return this._attacked(this._turn, XQ_SQUARES[square], true)
     } else {
-      return this._attacked(attackedBy, Ox88[square], true)
+      return this._attacked(attackedBy, XQ_SQUARES[square], true)
     }
   }
 
@@ -1333,7 +1046,7 @@ export class Chess {
   }
 
   isAttacked(square: Square, attackedBy: Color): boolean {
-    return this._attacked(attackedBy, Ox88[square])
+    return this._attacked(attackedBy, XQ_SQUARES[square])
   }
 
   isCheck(): boolean {
@@ -1344,68 +1057,50 @@ export class Chess {
     return this.isCheck()
   }
 
+  // In Xiangqi, having no legal moves is a loss (not stalemate)
   isCheckmate(): boolean {
-    return this.isCheck() && this._moves().length === 0
+    return this._moves().length === 0
   }
 
+  // In Xiangqi, stalemate does not exist - no legal moves is a loss
   isStalemate(): boolean {
-    return !this.isCheck() && this._moves().length === 0
+    return false
   }
 
   isInsufficientMaterial(): boolean {
-    /*
-     * k.b. vs k.b. (of opposite colors) with mate in 1:
-     * 8/8/8/8/1b6/8/B1k5/K7 b - - 0 1
-     *
-     * k.b. vs k.n. with mate in 1:
-     * 8/8/8/8/1n6/8/B7/K1k5 b - - 2 1
-     */
-    const pieces: Record<PieceSymbol, number> = {
-      b: 0,
-      n: 0,
-      r: 0,
-      q: 0,
-      k: 0,
-      p: 0,
-    }
-    const bishops = []
+    const pieces: Record<string, number> = {}
     let numPieces = 0
-    let squareColor = 0
 
-    for (let i = Ox88.a8; i <= Ox88.h1; i++) {
-      squareColor = (squareColor + 1) % 2
-      if (i & 0x88) {
-        i += 7
+    for (let i = XQ_SQUARES.a0; i <= XQ_SQUARES.i9; i++) {
+      if ((i & 0xf) >= 9) {
+        i += 6
         continue
       }
 
-      const piece = this._board[i]
-      if (piece) {
-        pieces[piece.type] = piece.type in pieces ? pieces[piece.type] + 1 : 1
-        if (piece.type === BISHOP) {
-          bishops.push(squareColor)
-        }
+      if (this._board[i]) {
+        pieces[this._board[i].type] =
+          (pieces[this._board[i].type] || 0) + 1
         numPieces++
       }
     }
 
-    // k vs. k
-    if (numPieces === 2) {
-      return true
-    } else if (
-      // k vs. kn .... or .... k vs. kb
-      numPieces === 3 &&
-      (pieces[BISHOP] === 1 || pieces[KNIGHT] === 1)
-    ) {
-      return true
-    } else if (numPieces === pieces[BISHOP] + 2) {
-      // kb vs. kb where any number of bishops are all on the same color
-      let sum = 0
-      const len = bishops.length
-      for (let i = 0; i < len; i++) {
-        sum += bishops[i]
-      }
-      if (sum === 0 || sum === len) {
+    // Only kings left
+    if (numPieces === 2) return true
+
+    // One side has only king, other has king + advisors/elephants only
+    // (advisors and elephants alone cannot checkmate)
+    const attackPieces = [
+      pieces[ROOK] || 0,
+      pieces[CANNON] || 0,
+      pieces[HORSE] || 0,
+      pieces[PAWN] || 0,
+    ]
+    const hasAttackPieces = attackPieces.some((c) => c > 0)
+
+    if (!hasAttackPieces) {
+      // Only kings, advisors, elephants remain
+      // Advisors and elephants from one side cannot force checkmate
+      if ((pieces[ADVISOR] || 0) + (pieces[ELEPHANT] || 0) <= 2) {
         return true
       }
     }
@@ -1418,13 +1113,12 @@ export class Chess {
   }
 
   isDrawByFiftyMoves(): boolean {
-    return this._halfMoves >= 100 // 50 moves per side = 100 half moves
+    return this._halfMoves >= 100
   }
 
   isDraw(): boolean {
     return (
       this.isDrawByFiftyMoves() ||
-      this.isStalemate() ||
       this.isInsufficientMaterial() ||
       this.isThreefoldRepetition()
     )
@@ -1432,12 +1126,6 @@ export class Chess {
 
   isGameOver(): boolean {
     return this.isCheckmate() || this.isDraw()
-  }
-
-  isPromotion({ from, to }: { from: Square; to: Square }): boolean {
-    return this._moves({ square: from, piece: 'p' }).some(
-      (move) => move.to === Ox88[to] && move.promotion,
-    )
   }
 
   private _createMove(internal: InternalMove) {
@@ -1523,7 +1211,7 @@ export class Chess {
 
   private _moves({
     legal = true,
-    piece = undefined,
+    piece: forPiece = undefined,
     square = undefined,
   }: {
     legal?: boolean
@@ -1531,184 +1219,189 @@ export class Chess {
     square?: Square
   } = {}): InternalMove[] {
     const forSquare = square ? (square.toLowerCase() as Square) : undefined
-    const forPiece = piece?.toLowerCase()
 
     const moves: InternalMove[] = []
     const us = this._turn
     const them = swapColor(us)
 
-    let firstSquare = Ox88.a8
-    let lastSquare = Ox88.h1
-    let singleSquare = false
+    let firstSquare = XQ_SQUARES.a0
+    let lastSquare = XQ_SQUARES.i9
 
-    // are we generating moves for a single square?
     if (forSquare) {
-      // illegal square, return empty moves
-      if (!(forSquare in Ox88)) {
+      if (!(forSquare in XQ_SQUARES)) {
         return []
       } else {
-        firstSquare = lastSquare = Ox88[forSquare]
-        singleSquare = true
+        firstSquare = lastSquare = XQ_SQUARES[forSquare]
       }
     }
 
     for (let from = firstSquare; from <= lastSquare; from++) {
-      // did we run off the end of the board
-      if (from & 0x88) {
-        from += 7
+      if ((from & 0xf) >= 9) {
+        from += 6
         continue
       }
 
-      // empty square or opponent, skip
-      if (!this._board[from] || this._board[from].color === them) {
+      if (!this._board[from] || this._board[from].color !== us) {
         continue
       }
+
       const { type } = this._board[from]
+      if (forPiece && forPiece !== type) continue
 
-      let to: number
-      if (type === PAWN) {
-        if (forPiece && forPiece !== type) continue
+      const fromRank = rank(from)
 
-        // single square, non-capturing
-        to = from + PAWN_OFFSETS[us][0]
-        if (!this._board[to]) {
-          addMove(moves, us, from, to, PAWN)
-
-          // double square
-          to = from + PAWN_OFFSETS[us][1]
-          if (SECOND_RANK[us] === rank(from) && !this._board[to]) {
-            addMove(moves, us, from, to, PAWN, undefined, BITS.BIG_PAWN)
-          }
-        }
-
-        // pawn captures
-        for (let j = 2; j < 4; j++) {
-          to = from + PAWN_OFFSETS[us][j]
-          if (to & 0x88) continue
-
-          if (this._board[to]?.color === them) {
-            addMove(
-              moves,
-              us,
-              from,
-              to,
-              PAWN,
-              this._board[to].type,
-              BITS.CAPTURE,
-            )
-          } else if (to === this._epSquare) {
-            addMove(moves, us, from, to, PAWN, PAWN, BITS.EP_CAPTURE)
-          }
-        }
-      } else {
-        if (forPiece && forPiece !== type) continue
-
-        for (let j = 0, len = PIECE_OFFSETS[type].length; j < len; j++) {
-          const offset = PIECE_OFFSETS[type][j]
-          to = from
-
-          while (true) {
-            to += offset
-            if (to & 0x88) break
-
+      switch (type) {
+        case KING: {
+          for (const offset of PIECE_OFFSETS.k) {
+            const to = from + offset
+            if (offBoard(to)) continue
+            const toR = rank(to)
+            const toF = file(to)
+            if (!inPalace(us, toR, toF)) continue
             if (!this._board[to]) {
-              addMove(moves, us, from, to, type)
-            } else {
-              // own color, stop loop
-              if (this._board[to].color === us) break
-
-              addMove(
-                moves,
-                us,
-                from,
-                to,
-                type,
-                this._board[to].type,
-                BITS.CAPTURE,
-              )
-              break
+              addMove(moves, us, from, to, KING)
+            } else if (this._board[to].color === them) {
+              addMove(moves, us, from, to, KING, this._board[to].type, BITS.CAPTURE)
             }
-
-            /* break, if knight or king */
-            if (type === KNIGHT || type === KING) break
           }
+          break
+        }
+
+        case ADVISOR: {
+          for (const offset of PIECE_OFFSETS.a) {
+            const to = from + offset
+            if (offBoard(to)) continue
+            const toR = rank(to)
+            const toF = file(to)
+            if (!inPalace(us, toR, toF)) continue
+            if (!this._board[to]) {
+              addMove(moves, us, from, to, ADVISOR)
+            } else if (this._board[to].color === them) {
+              addMove(moves, us, from, to, ADVISOR, this._board[to].type, BITS.CAPTURE)
+            }
+          }
+          break
+        }
+
+        case ELEPHANT: {
+          // Elephant cannot cross river
+          const onOwnSide = us === WHITE ? fromRank <= 4 : fromRank >= 5
+          if (!onOwnSide) break
+
+          for (const offset of PIECE_OFFSETS.e) {
+            const to = from + offset
+            if (offBoard(to)) continue
+            const toR = rank(to)
+            // Cannot cross river
+            const toOnOwnSide = us === WHITE ? toR <= 4 : toR >= 5
+            if (!toOnOwnSide) continue
+            // Check eye blocking
+            const eyeSq = from + ELEPHANT_EYES[offset]
+            if (this._board[eyeSq]) continue
+            if (!this._board[to]) {
+              addMove(moves, us, from, to, ELEPHANT)
+            } else if (this._board[to].color === them) {
+              addMove(moves, us, from, to, ELEPHANT, this._board[to].type, BITS.CAPTURE)
+            }
+          }
+          break
+        }
+
+        case HORSE: {
+          for (const offset of PIECE_OFFSETS.h) {
+            const to = from + offset
+            if (offBoard(to)) continue
+            // Check leg blocking
+            const legSq = from + HORSE_LEGS[offset]
+            if (this._board[legSq]) continue
+            if (!this._board[to]) {
+              addMove(moves, us, from, to, HORSE)
+            } else if (this._board[to].color === them) {
+              addMove(moves, us, from, to, HORSE, this._board[to].type, BITS.CAPTURE)
+            }
+          }
+          break
+        }
+
+        case ROOK: {
+          for (const offset of PIECE_OFFSETS.r) {
+            let to = from + offset
+            while (!offBoard(to)) {
+              if (!this._board[to]) {
+                addMove(moves, us, from, to, ROOK)
+              } else {
+                if (this._board[to].color === them) {
+                  addMove(moves, us, from, to, ROOK, this._board[to].type, BITS.CAPTURE)
+                }
+                break
+              }
+              to += offset
+            }
+          }
+          break
+        }
+
+        case CANNON: {
+          for (const offset of PIECE_OFFSETS.c) {
+            let to = from + offset
+            // Non-capturing moves: slide to empty squares until hitting a piece
+            while (!offBoard(to) && !this._board[to]) {
+              addMove(moves, us, from, to, CANNON)
+              to += offset
+            }
+            // If we hit a piece, it's the screen. Skip it and look for a capture target.
+            if (!offBoard(to)) {
+              to += offset // skip the screen
+              while (!offBoard(to) && !this._board[to]) {
+                to += offset
+              }
+              if (!offBoard(to) && this._board[to]?.color === them) {
+                addMove(moves, us, from, to, CANNON, this._board[to].type, BITS.CAPTURE)
+              }
+            }
+          }
+          break
+        }
+
+        case PAWN: {
+          const forward = us === WHITE ? 16 : -16
+          // Forward move
+          const fwd = from + forward
+          if (!offBoard(fwd)) {
+            if (!this._board[fwd]) {
+              addMove(moves, us, from, fwd, PAWN)
+            } else if (this._board[fwd].color === them) {
+              addMove(moves, us, from, fwd, PAWN, this._board[fwd].type, BITS.CAPTURE)
+            }
+          }
+          // Sideways moves (only after crossing river)
+          if (crossedRiver(us, fromRank)) {
+            for (const side of [-1, 1]) {
+              const to = from + side
+              if (offBoard(to) || rank(to) !== fromRank) continue
+              if (!this._board[to]) {
+                addMove(moves, us, from, to, PAWN)
+              } else if (this._board[to].color === them) {
+                addMove(moves, us, from, to, PAWN, this._board[to].type, BITS.CAPTURE)
+              }
+            }
+          }
+          break
         }
       }
     }
 
-    /*
-     * check for castling if we're:
-     *   a) generating all moves, or
-     *   b) doing single square move generation on the king's square
-     */
-
-    if (forPiece === undefined || forPiece === KING) {
-      if (!singleSquare || lastSquare === this._kings[us]) {
-        // king-side castling
-        if (this._castling[us] & BITS.KSIDE_CASTLE) {
-          const castlingFrom = this._kings[us]
-          const castlingTo = castlingFrom + 2
-
-          if (
-            !this._board[castlingFrom + 1] &&
-            !this._board[castlingTo] &&
-            !this._attacked(them, this._kings[us]) &&
-            !this._attacked(them, castlingFrom + 1) &&
-            !this._attacked(them, castlingTo)
-          ) {
-            addMove(
-              moves,
-              us,
-              this._kings[us],
-              castlingTo,
-              KING,
-              undefined,
-              BITS.KSIDE_CASTLE,
-            )
-          }
-        }
-
-        // queen-side castling
-        if (this._castling[us] & BITS.QSIDE_CASTLE) {
-          const castlingFrom = this._kings[us]
-          const castlingTo = castlingFrom - 2
-
-          if (
-            !this._board[castlingFrom - 1] &&
-            !this._board[castlingFrom - 2] &&
-            !this._board[castlingFrom - 3] &&
-            !this._attacked(them, this._kings[us]) &&
-            !this._attacked(them, castlingFrom - 1) &&
-            !this._attacked(them, castlingTo)
-          ) {
-            addMove(
-              moves,
-              us,
-              this._kings[us],
-              castlingTo,
-              KING,
-              undefined,
-              BITS.QSIDE_CASTLE,
-            )
-          }
-        }
-      }
-    }
-
-    /*
-     * return all pseudo-legal moves (this includes moves that allow the king
-     * to be captured)
-     */
+    // return all pseudo-legal moves
     if (!legal || this._kings[us] === -1) {
       return moves
     }
 
     // filter out illegal moves
-    const legalMoves = []
+    const legalMoves: InternalMove[] = []
 
-    for (let i = 0, len = moves.length; i < len; i++) {
+    for (let i = 0; i < moves.length; i++) {
       this._makeMove(moves[i])
-      if (!this._isKingAttacked(us)) {
+      if (!this._isKingAttacked(us) && !this._isFlyingGeneral()) {
         legalMoves.push(moves[i])
       }
       this._undoMove()
@@ -1718,24 +1411,10 @@ export class Chess {
   }
 
   move(
-    move: string | { from: string; to: string; promotion?: string } | null,
+    move: string | { from: string; to: string } | null,
     { strict = false }: { strict?: boolean } = {},
   ): Move {
-    /*
-     * The move function can be called with in the following parameters:
-     *
-     * .move('Nxb7')       <- argument is a case-sensitive SAN string
-     *
-     * .move({ from: 'h7', <- argument is a move object
-     *         to :'h8',
-     *         promotion: 'q' })
-     *
-     *
-     * An optional strict argument may be supplied to tell chess.js to
-     * strictly follow the SAN specification.
-     */
-
-    let moveObj = null
+    let moveObj: InternalMove | null = null
 
     if (typeof move === 'string') {
       moveObj = this._moveFromSan(move, strict)
@@ -1744,12 +1423,10 @@ export class Chess {
     } else if (typeof move === 'object') {
       const moves = this._moves()
 
-      // convert the pretty move object to an ugly move object
-      for (let i = 0, len = moves.length; i < len; i++) {
+      for (let i = 0; i < moves.length; i++) {
         if (
           move.from === algebraic(moves[i].from) &&
-          move.to === algebraic(moves[i].to) &&
-          (!('promotion' in moves[i]) || move.promotion === moves[i].promotion)
+          move.to === algebraic(moves[i].to)
         ) {
           moveObj = moves[i]
           break
@@ -1766,15 +1443,11 @@ export class Chess {
       }
     }
 
-    //disallow null moves when in check
+    // disallow null moves when in check
     if (this.isCheck() && moveObj.flags & BITS.NULL_MOVE) {
       throw new Error('Null move not allowed when in check')
     }
 
-    /*
-     * need to make a copy of move because we can't generate SAN after the move
-     * is made
-     */
     const prettyMove = this._createMove(moveObj)
 
     this._makeMove(moveObj)
@@ -1787,9 +1460,6 @@ export class Chess {
       move,
       kings: { b: this._kings.b, w: this._kings.w },
       turn: this._turn,
-      castling: { b: this._castling.b, w: this._castling.w },
-      epSquare: this._epSquare,
-      fenEpSquare: this._fenEpSquare,
       halfMoves: this._halfMoves,
       moveNumber: this._moveNumber,
     })
@@ -1815,14 +1485,8 @@ export class Chess {
       }
       this._halfMoves++
       this._turn = them
-
-      this._epSquare = EMPTY
-
       return
     }
-
-    this._hash ^= this._epKey()
-    this._hash ^= this._castlingKey()
 
     if (move.captured) {
       this._hash ^= this._pieceKey(move.to)
@@ -1830,102 +1494,13 @@ export class Chess {
 
     this._movePiece(move.from, move.to)
 
-    // if ep capture, remove the captured pawn
-    if (move.flags & BITS.EP_CAPTURE) {
-      if (this._turn === BLACK) {
-        this._clear(move.to - 16)
-      } else {
-        this._clear(move.to + 16)
-      }
-    }
-
-    // if pawn promotion, replace with new piece
-    if (move.promotion) {
-      this._clear(move.to)
-      this._set(move.to, { type: move.promotion, color: us })
-    }
-
-    // if we moved the king
+    // Update king position if king moved
     if (this._board[move.to].type === KING) {
       this._kings[us] = move.to
-
-      // if we castled, move the rook next to the king
-      if (move.flags & BITS.KSIDE_CASTLE) {
-        const castlingTo = move.to - 1
-        const castlingFrom = move.to + 1
-        this._movePiece(castlingFrom, castlingTo)
-      } else if (move.flags & BITS.QSIDE_CASTLE) {
-        const castlingTo = move.to + 1
-        const castlingFrom = move.to - 2
-        this._movePiece(castlingFrom, castlingTo)
-      }
-
-      // turn off castling
-      this._castling[us] = 0
     }
 
-    // turn off castling if we move a rook
-    if (this._castling[us]) {
-      for (let i = 0, len = ROOKS[us].length; i < len; i++) {
-        if (
-          move.from === ROOKS[us][i].square &&
-          this._castling[us] & ROOKS[us][i].flag
-        ) {
-          this._castling[us] ^= ROOKS[us][i].flag
-          break
-        }
-      }
-    }
-
-    // turn off castling if we capture a rook
-    if (this._castling[them]) {
-      for (let i = 0, len = ROOKS[them].length; i < len; i++) {
-        if (
-          move.to === ROOKS[them][i].square &&
-          this._castling[them] & ROOKS[them][i].flag
-        ) {
-          this._castling[them] ^= ROOKS[them][i].flag
-          break
-        }
-      }
-    }
-
-    this._hash ^= this._castlingKey()
-
-    // if big pawn move, update the en passant square
-    if (move.flags & BITS.BIG_PAWN) {
-      let epSquare
-
-      if (us === BLACK) {
-        epSquare = move.to - 16
-      } else {
-        epSquare = move.to + 16
-      }
-
-      this._fenEpSquare = epSquare
-
-      if (
-        (!((move.to - 1) & 0x88) &&
-          this._board[move.to - 1]?.type === PAWN &&
-          this._board[move.to - 1]?.color === them) ||
-        (!((move.to + 1) & 0x88) &&
-          this._board[move.to + 1]?.type === PAWN &&
-          this._board[move.to + 1]?.color === them)
-      ) {
-        this._epSquare = epSquare
-        this._hash ^= this._epKey()
-      } else {
-        this._epSquare = EMPTY
-      }
-    } else {
-      this._epSquare = EMPTY
-      this._fenEpSquare = EMPTY
-    }
-
-    // reset the 50 move counter if a pawn is moved or a piece is captured
-    if (move.piece === PAWN) {
-      this._halfMoves = 0
-    } else if (move.flags & (BITS.CAPTURE | BITS.EP_CAPTURE)) {
+    // Reset half-move clock on pawn moves and captures
+    if (move.piece === PAWN || move.flags & BITS.CAPTURE) {
       this._halfMoves = 0
     } else {
       this._halfMoves++
@@ -1956,21 +1531,13 @@ export class Chess {
       return null
     }
 
-    this._hash ^= this._epKey()
-    this._hash ^= this._castlingKey()
-
     const move = old.move
 
     this._kings = old.kings
     this._turn = old.turn
-    this._castling = old.castling
-    this._epSquare = old.epSquare
-    this._fenEpSquare = old.fenEpSquare
     this._halfMoves = old.halfMoves
     this._moveNumber = old.moveNumber
 
-    this._hash ^= this._epKey()
-    this._hash ^= this._castlingKey()
     this._hash ^= SIDE_KEY
 
     const us = this._turn
@@ -1982,38 +1549,14 @@ export class Chess {
 
     this._movePiece(move.to, move.from)
 
-    // to undo any promotions
+    // Restore original piece (undoes any promotion, though we don't have promotion in Xiangqi)
     if (move.piece) {
       this._clear(move.from)
       this._set(move.from, { type: move.piece, color: us })
     }
 
     if (move.captured) {
-      if (move.flags & BITS.EP_CAPTURE) {
-        // en passant capture
-        let index: number
-        if (us === BLACK) {
-          index = move.to - 16
-        } else {
-          index = move.to + 16
-        }
-        this._set(index, { type: PAWN, color: them })
-      } else {
-        // regular capture
-        this._set(move.to, { type: move.captured, color: them })
-      }
-    }
-
-    if (move.flags & (BITS.KSIDE_CASTLE | BITS.QSIDE_CASTLE)) {
-      let castlingTo: number, castlingFrom: number
-      if (move.flags & BITS.KSIDE_CASTLE) {
-        castlingTo = move.to + 1
-        castlingFrom = move.to - 1
-      } else {
-        castlingTo = move.to - 2
-        castlingFrom = move.to + 1
-      }
-      this._movePiece(castlingFrom, castlingTo)
+      this._set(move.to, { type: move.captured, color: them })
     }
 
     return move
@@ -2023,23 +1566,10 @@ export class Chess {
     newline = '\n',
     maxWidth = 0,
   }: { newline?: string; maxWidth?: number } = {}): string {
-    /*
-     * using the specification from http://www.chessclub.com/help/PGN-spec
-     * example for html usage: .pgn({ max_width: 72, newline_char: "<br />" })
-     */
-
     const result: string[] = []
     let headerExists = false
 
-    /* add the PGN header information */
     for (const i in this._header) {
-      /*
-       * TODO: order of enumerated properties in header object is not
-       * guaranteed, see ECMA-262 spec (section 12.6.4)
-       *
-       * By using HEADER_TEMPLATE, the order of tags should be preserved; we
-       * do have to check for null placeholders, though, and omit them
-       */
       const headerTag = this._header[i]
       if (headerTag) result.push(`[${i} "${this._header[i]}"]` + newline)
       headerExists = true
@@ -2058,37 +1588,27 @@ export class Chess {
       return moveString
     }
 
-    // pop all of history onto reversed_history
-    const reversedHistory = []
+    const reversedHistory: InternalMove[] = []
     while (this._history.length > 0) {
-      reversedHistory.push(this._undoMove())
+      reversedHistory.push(this._undoMove()!)
     }
 
-    const moves = []
+    const moves: string[] = []
     let moveString = ''
 
-    // special case of a commented starting position with no moves
     if (reversedHistory.length === 0) {
       moves.push(appendComment(''))
     }
 
-    // build the list of moves.  a move_string looks like: "3. e3 e6"
     while (reversedHistory.length > 0) {
       moveString = appendComment(moveString)
       const move = reversedHistory.pop()
+      if (!move) break
 
-      // make TypeScript stop complaining about move being undefined
-      if (!move) {
-        break
-      }
-
-      // if the position started with black to move, start PGN with #. ...
       if (!this._history.length && move.color === 'b') {
         const prefix = `${this._moveNumber}. ...`
-        // is there a comment preceding the first move?
         moveString = moveString ? `${moveString} ${prefix}` : prefix
       } else if (move.color === 'w') {
-        // store the previous generated move_string if we have one
         if (moveString.length) {
           moves.push(moveString)
         }
@@ -2100,23 +1620,16 @@ export class Chess {
       this._makeMove(move)
     }
 
-    // are there any other leftover moves?
     if (moveString.length) {
       moves.push(appendComment(moveString))
     }
 
-    // is there a result? (there ALWAYS has to be a result according to spec; see Seven Tag Roster)
     moves.push(this._header.Result || '*')
 
-    /*
-     * history should be back to what it was before we started generating PGN,
-     * so join together moves
-     */
     if (maxWidth === 0) {
       return result.join('') + moves.join(' ')
     }
 
-    // TODO (jah): huh?
     const strip = function () {
       if (result.length > 0 && result[result.length - 1] === ' ') {
         result.pop()
@@ -2125,16 +1638,11 @@ export class Chess {
       return false
     }
 
-    // NB: this does not preserve comment whitespace.
     const wrapComment = function (width: number, move: string) {
       for (const token of move.split(' ')) {
-        if (!token) {
-          continue
-        }
+        if (!token) continue
         if (width + token.length > maxWidth) {
-          while (strip()) {
-            width--
-          }
+          while (strip()) width--
           result.push(newline)
           width = 0
         }
@@ -2143,13 +1651,10 @@ export class Chess {
         result.push(' ')
         width++
       }
-      if (strip()) {
-        width--
-      }
+      if (strip()) width--
       return width
     }
 
-    // wrap the PGN output at max_width
     let currentWidth = 0
     for (let i = 0; i < moves.length; i++) {
       if (currentWidth + moves[i].length > maxWidth) {
@@ -2158,13 +1663,10 @@ export class Chess {
           continue
         }
       }
-      // if the current move will push past max_width
       if (currentWidth + moves[i].length > maxWidth && i !== 0) {
-        // don't end the line with whitespace
         if (result[result.length - 1] === ' ') {
           result.pop()
         }
-
         result.push(newline)
         currentWidth = 0
       } else if (i !== 0) {
@@ -2178,9 +1680,6 @@ export class Chess {
     return result.join('')
   }
 
-  /**
-   * @deprecated Use `setHeader` and `getHeaders` instead. This method will return null header tags (which is not what you want)
-   */
   header(...args: string[]): Record<string, string | null> {
     for (let i = 0; i < args.length; i += 2) {
       if (typeof args[i] === 'string' && typeof args[i + 1] === 'string') {
@@ -2190,7 +1689,6 @@ export class Chess {
     return this._header
   }
 
-  // TODO: value validation per spec
   setHeader(key: string, value: string): Record<string, string> {
     this._header[key] = value ?? SEVEN_TAG_ROSTER[key] ?? null
     return this.getHeaders()
@@ -2204,7 +1702,6 @@ export class Chess {
     return false
   }
 
-  // return only non-null headers (omit placemarker nulls)
   getHeaders(): Record<string, string> {
     const nonNullHeaders: Record<string, string> = {}
     for (const [key, value] of Object.entries(this._header)) {
@@ -2222,49 +1719,35 @@ export class Chess {
       newlineChar = '\r?\n',
     }: { strict?: boolean; newlineChar?: string } = {},
   ) {
-    // If newlineChar is not the default, replace all instances with \n
     if (newlineChar !== '\r?\n') {
       pgn = pgn.replace(new RegExp(newlineChar, 'g'), '\n')
     }
 
     const parsedPgn = parse(pgn)
 
-    // Put the board in the starting position
     this.reset()
 
-    // parse PGN header
     const headers = parsedPgn.headers
     let fen = ''
 
     for (const key in headers) {
-      // check to see user is including fen (possibly with wrong tag case)
       if (key.toLowerCase() === 'fen') {
         fen = headers[key]
       }
-
       this.header(key, headers[key])
     }
 
-    /*
-     * the permissive parser should attempt to load a fen tag, even if it's the
-     * wrong case and doesn't include a corresponding [SetUp "1"] tag
-     */
     if (!strict) {
       if (fen) {
         this.load(fen, { preserveHeaders: true })
       }
     } else {
-      /*
-       * strict parser - load the starting position indicated by [Setup '1']
-       * and [FEN position]
-       */
       if (headers['SetUp'] === '1') {
         if (!('FEN' in headers)) {
           throw new Error(
             'Invalid PGN: FEN tag must be supplied with SetUp tag',
           )
         }
-        // don't clear the headers when loading
         this.load(headers['FEN'], { preserveHeaders: true })
       }
     }
@@ -2286,7 +1769,6 @@ export class Chess {
             this._suffixes[this.fen()] = suffixAnnotation as Suffix
           }
 
-          // Store NAGs
           if (node.nags && node.nags.length > 0) {
             this._nags[this.fen()] = node.nags
           }
@@ -2300,12 +1782,6 @@ export class Chess {
       node = node.variations[0]
     }
 
-    /*
-     * Per section 8.2.6 of the PGN spec, the Result tag pair must match match
-     * the termination marker. Only do this when headers are present, but the
-     * result tag is missing
-     */
-
     const result = parsedPgn.result
     if (
       result &&
@@ -2316,46 +1792,13 @@ export class Chess {
     }
   }
 
-  /*
-   * Convert a move from 0x88 coordinates to Standard Algebraic Notation
-   * (SAN)
-   *
-   * @param {boolean} strict Use the strict SAN parser. It will throw errors
-   * on overly disambiguated moves (see below):
-   *
-   * r1bqkbnr/ppp2ppp/2n5/1B1pP3/4P3/8/PPPP2PP/RNBQK1NR b KQkq - 2 4
-   * 4. ... Nge7 is overly disambiguated because the knight on c6 is pinned
-   * 4. ... Ne7 is technically the valid SAN
-   */
-
-  private _moveToSan(move: InternalMove, moves: InternalMove[]): string {
-    let output = ''
-
-    if (move.flags & BITS.KSIDE_CASTLE) {
-      output = 'O-O'
-    } else if (move.flags & BITS.QSIDE_CASTLE) {
-      output = 'O-O-O'
-    } else if (move.flags & BITS.NULL_MOVE) {
+  // Convert a move to ICCS notation (e.g., "b0e2")
+  private _moveToSan(move: InternalMove, _moves?: InternalMove[]): string {
+    if (move.flags & BITS.NULL_MOVE) {
       return SAN_NULLMOVE
-    } else {
-      if (move.piece !== PAWN) {
-        const disambiguator = getDisambiguator(move, moves)
-        output += move.piece.toUpperCase() + disambiguator
-      }
-
-      if (move.flags & (BITS.CAPTURE | BITS.EP_CAPTURE)) {
-        if (move.piece === PAWN) {
-          output += algebraic(move.from)[0]
-        }
-        output += 'x'
-      }
-
-      output += algebraic(move.to)
-
-      if (move.promotion) {
-        output += '=' + move.promotion.toUpperCase()
-      }
     }
+
+    let output = algebraic(move.from) + algebraic(move.to)
 
     this._makeMove(move)
     if (this.isCheck()) {
@@ -2370,150 +1813,106 @@ export class Chess {
     return output
   }
 
-  // convert a move from Standard Algebraic Notation (SAN) to 0x88 coordinates
+  // Convert from SAN (WXF/ICCS notation) to internal move
   private _moveFromSan(move: string, strict = false): InternalMove | null {
-    // strip off any move decorations: e.g Nf3+?! becomes Nf3
     let cleanMove = strippedSan(move)
 
-    if (!strict) {
-      if (cleanMove === '0-0') {
-        cleanMove = 'O-O'
-      } else if (cleanMove === '0-0-0') {
-        cleanMove = 'O-O-O'
-      }
-    }
-
-    //first implementation of null with a dummy move (black king moves from a8 to a8), maybe this can be implemented better
+    // Null move
     if (cleanMove == SAN_NULLMOVE) {
-      const res: InternalMove = {
+      return {
         color: this._turn,
         from: 0,
         to: 0,
         piece: 'k',
         flags: BITS.NULL_MOVE,
       }
-      return res
     }
 
+    // Try strict match against all legal moves
     let pieceType = inferPieceType(cleanMove)
     let moves = this._moves({ legal: true, piece: pieceType })
 
-    // strict parser
-    for (let i = 0, len = moves.length; i < len; i++) {
+    for (let i = 0; i < moves.length; i++) {
       if (cleanMove === strippedSan(this._moveToSan(moves[i], moves))) {
         return moves[i]
       }
     }
 
-    // the strict parser failed
     if (strict) {
       return null
     }
 
-    let piece = undefined
-    let matches = undefined
-    let from = undefined
-    let to = undefined
-    let promotion = undefined
-
-    /*
-     * The default permissive (non-strict) parser allows the user to parse
-     * non-standard chess notations. This parser is only run after the strict
-     * Standard Algebraic Notation (SAN) parser has failed.
-     *
-     * When running the permissive parser, we'll run a regex to grab the piece, the
-     * to/from square, and an optional promotion piece. This regex will
-     * parse common non-standard notation like: Pe2-e4, Rc1c4, Qf3xf7,
-     * f7f8q, b1c3
-     *
-     * NOTE: Some positions and moves may be ambiguous when using the permissive
-     * parser. For example, in this position: 6k1/8/8/B7/8/8/8/BN4K1 w - - 0 1,
-     * the move b1c3 may be interpreted as Nc3 or B1c3 (a disambiguated bishop
-     * move). In these cases, the permissive parser will default to the most
-     * basic interpretation (which is b1c3 parsing to Nc3).
-     */
-
-    let overlyDisambiguated = false
-
-    matches = cleanMove.match(
-      /([pnbrqkPNBRQK])?([a-h][1-8])x?-?([a-h][1-8])([qrbnQRBN])?/,
-      //     piece         from              to       promotion
+    // Permissive parser - handle ICCS format: [a-i][0-9]-?[a-i][0-9]
+    const iccsMatch = cleanMove.match(
+      /^([a-i])([0-9])-?([a-i])([0-9])$/i,
     )
+    if (iccsMatch) {
+      const fromSq = (iccsMatch[1].toLowerCase() + iccsMatch[2]) as Square
+      const toSq = (iccsMatch[3].toLowerCase() + iccsMatch[4]) as Square
 
-    if (matches) {
-      piece = matches[1]
-      from = matches[2] as Square
-      to = matches[3] as Square
-      promotion = matches[4]
+      if (!(fromSq in XQ_SQUARES) || !(toSq in XQ_SQUARES)) return null
 
-      if (from.length == 1) {
-        overlyDisambiguated = true
-      }
-    } else {
-      /*
-       * The [a-h]?[1-8]? portion of the regex below handles moves that may be
-       * overly disambiguated (e.g. Nge7 is unnecessary and non-standard when
-       * there is one legal knight move to e7). In this case, the value of
-       * 'from' variable will be a rank or file, not a square.
-       */
+      const fromIdx = XQ_SQUARES[fromSq]
+      const toIdx = XQ_SQUARES[toSq]
 
-      matches = cleanMove.match(
-        /([pnbrqkPNBRQK])?([a-h]?[1-8]?)x?-?([a-h][1-8])([qrbnQRBN])?/,
-      )
-
-      if (matches) {
-        piece = matches[1]
-        from = matches[2] as Square
-        to = matches[3] as Square
-        promotion = matches[4]
-
-        if (from.length == 1) {
-          overlyDisambiguated = true
+      moves = this._moves({ legal: true })
+      for (let i = 0; i < moves.length; i++) {
+        if (moves[i].from === fromIdx && moves[i].to === toIdx) {
+          return moves[i]
         }
       }
     }
 
-    pieceType = inferPieceType(cleanMove)
-    moves = this._moves({
-      legal: true,
-      piece: piece ? (piece as PieceSymbol) : pieceType,
-    })
+    // Permissive parser - try WXF format: [KAEHRCPkaehrcp][0-9][+=.x\-][0-9]
+    const wxfMatch = cleanMove.match(
+      /^([KAEHRCPkaehrcp])?([1-9])([+=.x\-])([0-9])/,
+    )
+    if (wxfMatch) {
+      const piece =
+        wxfMatch[1]?.toLowerCase() || PAWN
+      const fromCol = parseInt(wxfMatch[2], 10)
+      const action = wxfMatch[3]
+      const targetNum = parseInt(wxfMatch[4], 10)
 
-    if (!to) {
-      return null
-    }
+      // WXF column numbering: for White/Red, col 1=file 8, col 9=file 0
+      // For Black, col 1=file 0, col 9=file 8
+      let fromFile: number
+      if (this._turn === WHITE) {
+        fromFile = 9 - fromCol
+      } else {
+        fromFile = fromCol - 1
+      }
 
-    for (let i = 0, len = moves.length; i < len; i++) {
-      if (!from) {
-        // if there is no from square, it could be just 'x' missing from a capture
-        if (
-          cleanMove ===
-          strippedSan(this._moveToSan(moves[i], moves)).replace('x', '')
-        ) {
-          return moves[i]
-        }
-        // hand-compare move properties with the results from our permissive regex
-      } else if (
-        (!piece || piece.toLowerCase() == moves[i].piece) &&
-        Ox88[from] == moves[i].from &&
-        Ox88[to] == moves[i].to &&
-        (!promotion || promotion.toLowerCase() == moves[i].promotion)
-      ) {
-        return moves[i]
-      } else if (overlyDisambiguated) {
-        /*
-         * SPECIAL CASE: we parsed a move string that may have an unneeded
-         * rank/file disambiguator (e.g. Nge7).  The 'from' variable will
-         */
+      // Find the piece on this file that can make the move
+      moves = this._moves({ legal: true, piece: piece as PieceSymbol })
+      for (let i = 0; i < moves.length; i++) {
+        const m = moves[i]
+        if (file(m.from) === fromFile) {
+          // Check that the move matches the WXF action and target
+          const mToFile = file(m.to)
+          const mToRank = rank(m.to)
 
-        const square = algebraic(moves[i].from)
-        if (
-          (!piece || piece.toLowerCase() == moves[i].piece) &&
-          Ox88[to] == moves[i].to &&
-          (from == square[0] || from == square[1]) &&
-          (!promotion || promotion.toLowerCase() == moves[i].promotion)
-        ) {
-          return moves[i]
+          // WXF target: for '=' action, target is column; for +/- action, target is steps
+          if (action === '=') {
+            // Horizontal move - target is column
+            let targetFile: number
+            if (this._turn === WHITE) {
+              targetFile = 9 - targetNum
+            } else {
+              targetFile = targetNum - 1
+            }
+            if (mToFile === targetFile && rank(m.from) === mToRank) {
+              return m
+            }
+          } else if (action === '+' || action === '-') {
+            // Forward/backward - target is steps or column
+            // For pawns, target is the destination column
+            const forward = this._turn === WHITE ? 1 : -1
+            const actualSteps = (rank(m.to) - rank(m.from)) * forward
+            if (actualSteps === targetNum) {
+              return m
+            }
+          }
         }
       }
     }
@@ -2522,31 +1921,31 @@ export class Chess {
   }
 
   ascii(): string {
-    let s = '   +------------------------+\n'
-    for (let i = Ox88.a8; i <= Ox88.h1; i++) {
-      // display the rank
-      if (file(i) === 0) {
-        s += ' ' + '87654321'[rank(i)] + ' |'
+    let s = '   +---+---+---+---+---+---+---+---+---+\n'
+    for (let r = 9; r >= 0; r--) {
+      s += ' ' + r + ' |'
+      for (let f = 0; f < 9; f++) {
+        const sq = r * 16 + f
+        if (this._board[sq]) {
+          const piece = this._board[sq].type
+          const color = this._board[sq].color
+          const symbol =
+            color === WHITE ? piece.toUpperCase() : piece.toLowerCase()
+          s += ' ' + symbol + ' '
+        } else {
+          s += ' . '
+        }
+        if (f < 8) s += '|'
       }
-
-      if (this._board[i]) {
-        const piece = this._board[i].type
-        const color = this._board[i].color
-        const symbol =
-          color === WHITE ? piece.toUpperCase() : piece.toLowerCase()
-        s += ' ' + symbol + ' '
-      } else {
-        s += ' . '
-      }
-
-      if ((i + 1) & 0x88) {
-        s += '|\n'
-        i += 8
+      s += '|\n'
+      if (r === 5) {
+        s += '   +~~~+~~~+~~~+~~~+~~~+~~~+~~~+~~~+~~~+\n'
+      } else if (r > 0) {
+        s += '   +---+---+---+---+---+---+---+---+---+\n'
       }
     }
-    s += '   +------------------------+\n'
-    s += '     a  b  c  d  e  f  g  h'
-
+    s += '   +---+---+---+---+---+---+---+---+---+\n'
+    s += '     a   b   c   d   e   f   g   h   i'
     return s
   }
 
@@ -2555,9 +1954,9 @@ export class Chess {
     let nodes = 0
     const color = this._turn
 
-    for (let i = 0, len = moves.length; i < len; i++) {
+    for (let i = 0; i < moves.length; i++) {
       this._makeMove(moves[i])
-      if (!this._isKingAttacked(color)) {
+      if (!this._isKingAttacked(color) && !this._isFlyingGeneral()) {
         if (depth - 1 > 0) {
           nodes += this.perft(depth - 1)
         } else {
@@ -2575,7 +1974,7 @@ export class Chess {
       return false
     }
 
-    this.move('--')
+    this.move(SAN_NULLMOVE)
     return true
   }
 
@@ -2584,32 +1983,31 @@ export class Chess {
   }
 
   board(): ({ square: Square; type: PieceSymbol; color: Color } | null)[][] {
-    const output = []
-    let row = []
+    const output: ({ square: Square; type: PieceSymbol; color: Color } | null)[][] = []
 
-    for (let i = Ox88.a8; i <= Ox88.h1; i++) {
-      if (this._board[i] == null) {
-        row.push(null)
-      } else {
-        row.push({
-          square: algebraic(i),
-          type: this._board[i].type,
-          color: this._board[i].color,
-        })
+    for (let r = 9; r >= 0; r--) {
+      const row: ({ square: Square; type: PieceSymbol; color: Color } | null)[] = []
+      for (let f = 0; f < 9; f++) {
+        const i = r * 16 + f
+        if (this._board[i] == null) {
+          row.push(null)
+        } else {
+          row.push({
+            square: algebraic(i),
+            type: this._board[i].type,
+            color: this._board[i].color,
+          })
+        }
       }
-      if ((i + 1) & 0x88) {
-        output.push(row)
-        row = []
-        i += 8
-      }
+      output.push(row)
     }
 
     return output
   }
 
   squareColor(square: Square): 'light' | 'dark' | null {
-    if (square in Ox88) {
-      const sq = Ox88[square]
+    if (square in XQ_SQUARES) {
+      const sq = XQ_SQUARES[square]
       return (rank(sq) + file(sq)) % 2 === 0 ? 'light' : 'dark'
     }
 
@@ -2621,18 +2019,16 @@ export class Chess {
   history({ verbose }: { verbose: false }): string[]
   history({ verbose }: { verbose: boolean }): string[] | Move[]
   history({ verbose = false }: { verbose?: boolean } = {}) {
-    const reversedHistory = []
-    const moveHistory = []
+    const reversedHistory: InternalMove[] = []
+    const moveHistory: (string | Move)[] = []
 
     while (this._history.length > 0) {
-      reversedHistory.push(this._undoMove())
+      reversedHistory.push(this._undoMove()!)
     }
 
     while (true) {
       const move = reversedHistory.pop()
-      if (!move) {
-        break
-      }
+      if (!move) break
 
       if (verbose) {
         moveHistory.push(this._createMove(move))
@@ -2645,10 +2041,6 @@ export class Chess {
     return moveHistory
   }
 
-  /*
-   * Keeps track of position occurrence counts for the purpose of repetition
-   * checking. Old positions are removed from the map if their counts are reduced to 0.
-   */
   private _getPositionCount(hash: bigint): number {
     return this._positionCount.get(hash) ?? 0
   }
@@ -2671,7 +2063,7 @@ export class Chess {
   }
 
   private _pruneComments() {
-    const reversedHistory = []
+    const reversedHistory: InternalMove[] = []
     const currentComments: Record<string, string> = {}
 
     const copyComment = (fen: string) => {
@@ -2681,16 +2073,14 @@ export class Chess {
     }
 
     while (this._history.length > 0) {
-      reversedHistory.push(this._undoMove())
+      reversedHistory.push(this._undoMove()!)
     }
 
     copyComment(this.fen())
 
     while (true) {
       const move = reversedHistory.pop()
-      if (!move) {
-        break
-      }
+      if (!move) break
       this._makeMove(move)
       copyComment(this.fen())
     }
@@ -2705,9 +2095,6 @@ export class Chess {
     this._comments[this.fen()] = comment.replace('{', '[').replace('}', ']')
   }
 
-  /**
-   * @deprecated Renamed to `removeComment` for consistency
-   */
   deleteComment(): string {
     return this.removeComment()
   }
@@ -2767,83 +2154,53 @@ export class Chess {
     return result
   }
 
-  /**
-   * Get the suffix annotation for the given position (or current one).
-   */
-  public getSuffixAnnotation(fen?: string): Suffix | undefined {
+  getSuffixAnnotation(fen?: string): Suffix | undefined {
     const key = fen ?? this.fen()
     return this._suffixes[key]
   }
 
-  /**
-   * Set or overwrite the suffix annotation for the given position (or current).
-   * Throws if the suffix isn't one of the allowed SUFFIX_LIST values.
-   */
-  public setSuffixAnnotation(suffix: Suffix, fen?: string): void {
+  setSuffixAnnotation(suffix: Suffix, fen?: string): void {
     if (!SUFFIX_LIST.includes(suffix)) {
       throw new Error(`Invalid suffix: ${suffix}`)
     }
     this._suffixes[fen || this.fen()] = suffix
   }
 
-  /**
-   * Remove the suffix annotation for the given position (or current).
-   */
-
-  public removeSuffixAnnotation(fen?: string): Suffix | undefined {
+  removeSuffixAnnotation(fen?: string): Suffix | undefined {
     const key = fen || this.fen()
     const old = this._suffixes[key]
     delete this._suffixes[key]
     return old
   }
 
-  /**
-   * Get the NAGs for the given position (or current one).
-   */
-  public getNags(fen?: string): NAG[] {
+  getNags(fen?: string): NAG[] {
     const key = fen ?? this.fen()
     return this._nags[key] ?? []
   }
 
-  /**
-   * Add a NAG to the given position (or current).
-   * Supports multiple NAGs per position.
-   */
-  public addNag(nag: NAG, fen?: string): void {
+  addNag(nag: NAG, fen?: string): void {
     const key = fen || this.fen()
     if (!this._nags[key]) {
       this._nags[key] = []
     }
-    // Avoid duplicates
     if (!this._nags[key].includes(nag)) {
       this._nags[key].push(nag)
     }
   }
 
-  /**
-   * Set NAGs for the given position (or current), replacing any existing NAGs.
-   */
-  public setNags(nags: NAG[], fen?: string): void {
+  setNags(nags: NAG[], fen?: string): void {
     const key = fen || this.fen()
-    this._nags[key] = [...nags] // Create a copy
+    this._nags[key] = [...nags]
   }
 
-  /**
-   * Remove all NAGs for the given position (or current).
-   * Returns the removed NAGs.
-   */
-  public removeNags(fen?: string): NAG[] {
+  removeNags(fen?: string): NAG[] {
     const key = fen || this.fen()
     const old = this._nags[key] ?? []
     delete this._nags[key]
     return old
   }
 
-  /**
-   * Remove a specific NAG from the given position (or current).
-   * Returns true if the NAG was found and removed.
-   */
-  public removeNag(nag: NAG, fen?: string): boolean {
+  removeNag(nag: NAG, fen?: string): boolean {
     const key = fen || this.fen()
     const nags = this._nags[key]
     if (!nags) return false
@@ -2852,16 +2209,12 @@ export class Chess {
     if (index === -1) return false
 
     nags.splice(index, 1)
-    // Clean up empty arrays
     if (nags.length === 0) {
       delete this._nags[key]
     }
     return true
   }
 
-  /**
-   * @deprecated Renamed to `removeComments` for consistency
-   */
   deleteComments(): { fen: string; comment: string }[] {
     return this.removeComments()
   }
@@ -2873,36 +2226,6 @@ export class Chess {
       delete this._comments[fen]
       return { fen: fen, comment: comment }
     })
-  }
-
-  setCastlingRights(
-    color: Color,
-    rights: Partial<Record<typeof KING | typeof QUEEN, boolean>>,
-  ): boolean {
-    for (const side of [KING, QUEEN] as const) {
-      if (rights[side] !== undefined) {
-        if (rights[side]) {
-          this._castling[color] |= SIDES[side]
-        } else {
-          this._castling[color] &= ~SIDES[side]
-        }
-      }
-    }
-
-    this._updateCastlingRights()
-    const result = this.getCastlingRights(color)
-
-    return (
-      (rights[KING] === undefined || rights[KING] === result[KING]) &&
-      (rights[QUEEN] === undefined || rights[QUEEN] === result[QUEEN])
-    )
-  }
-
-  getCastlingRights(color: Color): { [KING]: boolean; [QUEEN]: boolean } {
-    return {
-      [KING]: (this._castling[color] & SIDES[KING]) !== 0,
-      [QUEEN]: (this._castling[color] & SIDES[QUEEN]) !== 0,
-    }
   }
 
   moveNumber(): number {
