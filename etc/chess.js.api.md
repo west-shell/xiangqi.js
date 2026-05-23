@@ -5,16 +5,20 @@
 ```ts
 
 // @public (undocumented)
-export const BISHOP = "b";
+export const ADVISOR = "a";
 
 // @public (undocumented)
 export const BLACK = "b";
+
+// @public (undocumented)
+export const CANNON = "c";
 
 // @public (undocumented)
 export class Chess {
     constructor(fen?: string, { skipValidation }?: {
         skipValidation?: boolean | undefined;
     });
+    // (undocumented)
     addNag(nag: NAG, fen?: string): void;
     // (undocumented)
     ascii(): string;
@@ -30,26 +34,19 @@ export class Chess {
     clear({ preserveHeaders }?: {
         preserveHeaders?: boolean | undefined;
     }): void;
-    // @deprecated (undocumented)
+    // (undocumented)
     deleteComment(): string;
-    // @deprecated (undocumented)
+    // (undocumented)
     deleteComments(): {
         fen: string;
         comment: string;
     }[];
     // (undocumented)
-    fen({ forceEnpassantSquare, }?: {
-        forceEnpassantSquare?: boolean;
-    }): string;
+    fen(): string;
     // (undocumented)
     findPiece(piece: Piece): Square[];
     // (undocumented)
     get(square: Square): Piece | undefined;
-    // (undocumented)
-    getCastlingRights(color: Color): {
-        [KING]: boolean;
-        [QUEEN]: boolean;
-    };
     // (undocumented)
     getComment(): string;
     // (undocumented)
@@ -61,11 +58,13 @@ export class Chess {
     }[];
     // (undocumented)
     getHeaders(): Record<string, string>;
+    // (undocumented)
     getNags(fen?: string): NAG[];
+    // (undocumented)
     getSuffixAnnotation(fen?: string): Suffix | undefined;
     // (undocumented)
     hash(): string;
-    // @deprecated (undocumented)
+    // (undocumented)
     header(...args: string[]): Record<string, string | null>;
     // (undocumented)
     history(): string[];
@@ -98,11 +97,6 @@ export class Chess {
     // (undocumented)
     isInsufficientMaterial(): boolean;
     // (undocumented)
-    isPromotion({ from, to }: {
-        from: Square;
-        to: Square;
-    }): boolean;
-    // (undocumented)
     isStalemate(): boolean;
     // (undocumented)
     isThreefoldRepetition(): boolean;
@@ -120,7 +114,6 @@ export class Chess {
     move(move: string | {
         from: string;
         to: string;
-        promotion?: string;
     } | null, { strict }?: {
         strict?: boolean;
     }): Move;
@@ -217,18 +210,21 @@ export class Chess {
     }[];
     // (undocumented)
     removeHeader(key: string): boolean;
+    // (undocumented)
     removeNag(nag: NAG, fen?: string): boolean;
+    // (undocumented)
     removeNags(fen?: string): NAG[];
+    // (undocumented)
     removeSuffixAnnotation(fen?: string): Suffix | undefined;
     // (undocumented)
     reset(): void;
     // (undocumented)
-    setCastlingRights(color: Color, rights: Partial<Record<typeof KING | typeof QUEEN, boolean>>): boolean;
-    // (undocumented)
     setComment(comment: string): void;
     // (undocumented)
     setHeader(key: string, value: string): Record<string, string>;
+    // (undocumented)
     setNags(nags: NAG[], fen?: string): void;
+    // (undocumented)
     setSuffixAnnotation(suffix: Suffix, fen?: string): void;
     // (undocumented)
     setTurn(color: Color): boolean;
@@ -244,13 +240,16 @@ export class Chess {
 export type Color = 'w' | 'b';
 
 // @public (undocumented)
-export const DEFAULT_POSITION = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+export const DEFAULT_POSITION = "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - 0 1";
+
+// @public (undocumented)
+export const ELEPHANT = "e";
+
+// @public (undocumented)
+export const HORSE = "h";
 
 // @public (undocumented)
 export const KING = "k";
-
-// @public (undocumented)
-export const KNIGHT = "n";
 
 // @public (undocumented)
 export class Move {
@@ -264,30 +263,18 @@ export class Move {
     captured?: PieceSymbol;
     // (undocumented)
     color: Color;
-    // @deprecated (undocumented)
+    // (undocumented)
     flags: string;
     // (undocumented)
     from: Square;
     // (undocumented)
-    isBigPawn(): boolean;
-    // (undocumented)
     isCapture(): boolean;
     // (undocumented)
-    isEnPassant(): boolean;
-    // (undocumented)
-    isKingsideCastle(): boolean;
-    // (undocumented)
     isNullMove(): boolean;
-    // (undocumented)
-    isPromotion(): boolean;
-    // (undocumented)
-    isQueensideCastle(): boolean;
     // (undocumented)
     lan: string;
     // (undocumented)
     piece: PieceSymbol;
-    // (undocumented)
-    promotion?: PieceSymbol;
     // (undocumented)
     san: string;
     // (undocumented)
@@ -307,7 +294,7 @@ export const NAG_TO_SYMBOL: {
     readonly 15: "⩱";
     readonly 16: "±";
     readonly 17: "∓";
-    readonly 18: "+−";
+    readonly 18: "+{}-";
     readonly 19: "-+";
     readonly 146: "N";
     readonly 32: "↑↑";
@@ -332,10 +319,7 @@ export type Piece = {
 };
 
 // @public (undocumented)
-export type PieceSymbol = 'p' | 'n' | 'b' | 'r' | 'q' | 'k';
-
-// @public (undocumented)
-export const QUEEN = "q";
+export type PieceSymbol = 'p' | 'h' | 'e' | 'r' | 'c' | 'k' | 'a';
 
 // @public (undocumented)
 export const ROOK = "r";
@@ -344,7 +328,7 @@ export const ROOK = "r";
 export const SEVEN_TAG_ROSTER: Record<string, string>;
 
 // @public (undocumented)
-export type Square = 'a8' | 'b8' | 'c8' | 'd8' | 'e8' | 'f8' | 'g8' | 'h8' | 'a7' | 'b7' | 'c7' | 'd7' | 'e7' | 'f7' | 'g7' | 'h7' | 'a6' | 'b6' | 'c6' | 'd6' | 'e6' | 'f6' | 'g6' | 'h6' | 'a5' | 'b5' | 'c5' | 'd5' | 'e5' | 'f5' | 'g5' | 'h5' | 'a4' | 'b4' | 'c4' | 'd4' | 'e4' | 'f4' | 'g4' | 'h4' | 'a3' | 'b3' | 'c3' | 'd3' | 'e3' | 'f3' | 'g3' | 'h3' | 'a2' | 'b2' | 'c2' | 'd2' | 'e2' | 'f2' | 'g2' | 'h2' | 'a1' | 'b1' | 'c1' | 'd1' | 'e1' | 'f1' | 'g1' | 'h1';
+export type Square = 'a9' | 'b9' | 'c9' | 'd9' | 'e9' | 'f9' | 'g9' | 'h9' | 'i9' | 'a8' | 'b8' | 'c8' | 'd8' | 'e8' | 'f8' | 'g8' | 'h8' | 'i8' | 'a7' | 'b7' | 'c7' | 'd7' | 'e7' | 'f7' | 'g7' | 'h7' | 'i7' | 'a6' | 'b6' | 'c6' | 'd6' | 'e6' | 'f6' | 'g6' | 'h6' | 'i6' | 'a5' | 'b5' | 'c5' | 'd5' | 'e5' | 'f5' | 'g5' | 'h5' | 'i5' | 'a4' | 'b4' | 'c4' | 'd4' | 'e4' | 'f4' | 'g4' | 'h4' | 'i4' | 'a3' | 'b3' | 'c3' | 'd3' | 'e3' | 'f3' | 'g3' | 'h3' | 'i3' | 'a2' | 'b2' | 'c2' | 'd2' | 'e2' | 'f2' | 'g2' | 'h2' | 'i2' | 'a1' | 'b1' | 'c1' | 'd1' | 'e1' | 'f1' | 'g1' | 'h1' | 'i1' | 'a0' | 'b0' | 'c0' | 'd0' | 'e0' | 'f0' | 'g0' | 'h0' | 'i0';
 
 // @public (undocumented)
 export const SQUARES: Square[];
