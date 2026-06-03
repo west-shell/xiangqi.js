@@ -78,6 +78,42 @@ export const PAWN = 'p'
 export type Color = 'w' | 'b'
 export type PieceSymbol = 'p' | 'n' | 'b' | 'r' | 'c' | 'k' | 'a'
 
+// ---- Chinese notation helpers ----
+
+const RED_NUMERALS = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九']
+
+const PIECE_CHINESE: Record<PieceSymbol, { red: string; black: string }> = {
+  k: { red: '帅', black: '将' },
+  a: { red: '仕', black: '士' },
+  b: { red: '相', black: '象' },
+  n: { red: '马', black: '马' },
+  r: { red: '车', black: '车' },
+  c: { red: '炮', black: '炮' },
+  p: { red: '兵', black: '卒' },
+}
+
+const WXF_LETTER: Record<PieceSymbol, string> = {
+  k: 'K', a: 'A', b: 'B', n: 'N', r: 'R', c: 'C', p: 'P',
+}
+
+// Straight-moving pieces: target is step count for advance/retreat
+const STRAIGHT_PIECES: Set<string> = new Set(['r', 'c', 'k', 'p'])
+
+/** Column 1-9 from the moving side's perspective (right → left). */
+function playerCol(file: number, color: Color): number {
+  return color === WHITE ? 9 - file : file + 1
+}
+
+/** Forward steps (positive = advance, negative = retreat). */
+function forwardSteps(
+  fromRank: number,
+  toRank: number,
+  color: Color,
+): number {
+  const direction = color === WHITE ? 1 : -1
+  return (toRank - fromRank) * direction
+}
+
 /*
  * Board: 9 columns (a-i) x 10 ranks (0-9), ranks 0=red back, 9=black back
  */
@@ -169,12 +205,16 @@ export class Move {
   lan: string
   before: string
   after: string
+  wxf: string
+  iccs: string
 
   constructor(
     internal: InternalMove,
     san: string,
     before: string,
     after: string,
+    wxf: string,
+    iccs: string,
   ) {
     const { color, piece, from, to, flags, captured } = internal
 
@@ -187,6 +227,8 @@ export class Move {
     this.lan = algebraic(from) + algebraic(to)
     this.before = before
     this.after = after
+    this.wxf = wxf
+    this.iccs = iccs
 
     this.flags = ''
     for (const flag in BITS) {
@@ -1133,7 +1175,10 @@ export class Chess {
     const after = this.fen()
     this._undoMove()
 
-    return new Move(internal, san, before, after)
+    const wxf = this._moveToWxf(internal)
+    const iccs = this._moveToIccs(internal)
+
+    return new Move(internal, san, before, after, wxf, iccs)
   }
 
   moves(): string[]
@@ -1141,6 +1186,55 @@ export class Chess {
   moves({ piece }: { piece: PieceSymbol }): string[]
 
   moves({ square, piece }: { square: Square; piece: PieceSymbol }): string[]
+
+  moves({
+    Chinese,
+    square,
+  }: {
+    Chinese: true
+    square?: Square
+  }): string[]
+  moves({
+    Chinese,
+    square,
+  }: {
+    Chinese?: boolean
+    square?: Square
+  }): string[]
+
+  moves({
+    Chinese,
+    piece,
+  }: {
+    Chinese: true
+    piece?: PieceSymbol
+  }): string[]
+  moves({
+    Chinese,
+    piece,
+  }: {
+    Chinese?: boolean
+    piece?: PieceSymbol
+  }): string[]
+
+  moves({
+    Chinese,
+    square,
+    piece,
+  }: {
+    Chinese: true
+    square?: Square
+    piece?: PieceSymbol
+  }): string[]
+  moves({
+    Chinese,
+    square,
+    piece,
+  }: {
+    Chinese?: boolean
+    square?: Square
+    piece?: PieceSymbol
+  }): string[]
 
   moves({ verbose, square }: { verbose: true; square?: Square }): Move[]
   moves({ verbose, square }: { verbose: false; square?: Square }): string[]
@@ -1194,16 +1288,23 @@ export class Chess {
 
   moves({
     verbose = false,
+    Chinese = false,
     square = undefined,
     piece = undefined,
-  }: { verbose?: boolean; square?: Square; piece?: PieceSymbol } = {}) {
+  }: {
+    verbose?: boolean
+    Chinese?: boolean
+    square?: Square
+    piece?: PieceSymbol
+  } = {}) {
     const moves = this._moves({ square, piece })
 
     if (verbose) {
       return moves.map((move) => this._createMove(move))
-    } else {
-      return moves.map((move) => this._moveToSan(move))
     }
+
+    const toSan = Chinese ? this._moveToSan : this._moveToIccs
+    return moves.map((move) => toSan.call(this, move))
   }
 
   private _moves({
@@ -1676,7 +1777,7 @@ export class Chess {
         moveString = this._moveNumber + '.'
       }
 
-      moveString = moveString + ' ' + this._moveToSan(move)
+      moveString = moveString + ' ' + this._moveToIccs(move)
       this._makeMove(move)
     }
 
@@ -1852,25 +1953,107 @@ export class Chess {
     }
   }
 
-  // Convert a move to ICCS notation (e.g., "b0e2")
+  // Convert a move to Chinese notation (e.g., "炮二平五")
   private _moveToSan(move: InternalMove): string {
     if (move.flags & BITS.NULL_MOVE) {
       return SAN_NULLMOVE
     }
 
-    let output = algebraic(move.from) + algebraic(move.to)
+    const { piece, color, from, to } = move
+    const fromF = file(from),
+      toF = file(to)
+    const fromR = rank(from),
+      toR = rank(to)
 
-    this._makeMove(move)
-    if (this.isCheck()) {
-      if (this.isCheckmate()) {
-        output += '#'
+    const name = PIECE_CHINESE[piece][color === WHITE ? 'red' : 'black']
+
+    // Column label (handle disambiguation 前/后)
+    const dis = this._colDisambiguate(piece, color, fromF, fromR)
+    let col: string
+    if (dis) {
+      col = dis
+    } else {
+      const n = playerCol(fromF, color)
+      col = color === WHITE ? RED_NUMERALS[n] : String(n)
+    }
+
+    // Action & target
+    let action: string, target: string
+    if (fromR === toR) {
+      action = '平'
+      const n = playerCol(toF, color)
+      target = color === WHITE ? RED_NUMERALS[n] : String(n)
+    } else {
+      const steps = forwardSteps(fromR, toR, color)
+      action = steps > 0 ? '进' : '退'
+
+      if (STRAIGHT_PIECES.has(piece)) {
+        const n = Math.abs(steps)
+        target = color === WHITE ? RED_NUMERALS[n] : String(n)
       } else {
-        output += '+'
+        const n = playerCol(toF, color)
+        target = color === WHITE ? RED_NUMERALS[n] : String(n)
       }
     }
-    this._undoMove()
 
-    return output
+    return `${name}${col}${action}${target}`
+  }
+
+  // Convert a move to WXF notation (e.g., "C2.5")
+  private _moveToWxf(move: InternalMove): string {
+    const { piece, color, from, to } = move
+    const fromF = file(from),
+      toF = file(to)
+    const fromR = rank(from),
+      toR = rank(to)
+
+    const letter = WXF_LETTER[piece]
+    const l = color === WHITE ? letter : letter.toLowerCase()
+    const col = playerCol(fromF, color)
+
+    let action: string, target: number
+    if (fromR === toR) {
+      action = '.'
+      target = playerCol(toF, color)
+    } else {
+      const steps = forwardSteps(fromR, toR, color)
+      action = steps > 0 ? '+' : '-'
+      target = Math.abs(steps)
+    }
+
+    return `${l}${col}${action}${target}`
+  }
+
+  // Convert a move to ICCS notation (e.g., "h2e2")
+  private _moveToIccs(move: InternalMove): string {
+    if (move.flags & BITS.NULL_MOVE) {
+      return SAN_NULLMOVE
+    }
+    return algebraic(move.from) + algebraic(move.to)
+  }
+
+  /** 前/后 disambiguation when multiple same-type pieces share a column. */
+  private _colDisambiguate(
+    piece: PieceSymbol,
+    color: Color,
+    fromFile: number,
+    fromRank: number,
+  ): string {
+    const forward = color === WHITE ? 1 : -1
+    const startRank = forward > 0 ? 9 : 0
+    const endRank = forward > 0 ? -1 : 10
+
+    const found: number[] = []
+    for (let r = startRank; r !== endRank; r -= forward) {
+      const sq = r * 16 + fromFile
+      const p = this._board[sq]
+      if (p && p.type === piece && p.color === color) {
+        found.push(r)
+      }
+    }
+
+    if (found.length <= 1) return ''
+    return found.indexOf(fromRank) === 0 ? '前' : '后'
   }
 
   // Convert from SAN (WXF/ICCS notation) to internal move
@@ -1893,7 +2076,7 @@ export class Chess {
     let moves = this._moves({ legal: true, piece: pieceType })
 
     for (let i = 0; i < moves.length; i++) {
-      if (cleanMove === strippedSan(this._moveToSan(moves[i]))) {
+      if (cleanMove === strippedSan(this._moveToIccs(moves[i]))) {
         return moves[i]
       }
     }
@@ -2099,7 +2282,7 @@ export class Chess {
       if (verbose) {
         moveHistory.push(this._createMove(move))
       } else {
-        moveHistory.push(this._moveToSan(move))
+        moveHistory.push(this._moveToIccs(move))
       }
       this._makeMove(move)
     }
