@@ -37,6 +37,6 @@ describe('棋盘数组', () => {
     // b0 应该是空了
     expect(board[9][1]).toBeNull()
     // c2 应该有马
-    expect(board[7][2]).toEqual({ square: 'c2', type: 'h', color: 'w' })
+    expect(board[7][2]).toEqual({ square: 'c2', type: 'n', color: 'w' })
   })
 })

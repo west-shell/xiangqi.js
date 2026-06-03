@@ -5,13 +5,13 @@ import { expect, test } from 'vitest'
 test('load - 加载初始局面', () => {
   const chess = new Chess()
   expect(chess.fen()).toBe(
-    'rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - 0 1',
+    'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1',
   )
 })
 
 test('load - 加载中局局面', () => {
   const fen =
-    'rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1CH4C1/9/R1EAKAEHR b - - 1 1'
+    'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1CN4C1/9/R1BAKABNR b - - 1 1'
   const chess = new Chess(fen)
   expect(chess.fen()).toBe(fen)
   expect(chess.turn()).toBe('b')

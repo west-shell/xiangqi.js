@@ -13,7 +13,7 @@ test('regression - 开局走子不报错', () => {
 test('regression - 将军局面有合法应着', () => {
   // 红车在 e7 将军黑将
   const chess = new Chess(
-    'rheakaehr/9/1c2R2c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR b - - 0 1',
+    'rnbakabnr/9/1c2R2c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR b - - 0 1',
   )
   const moves = chess.moves()
   expect(moves.length).toBeGreaterThan(0)

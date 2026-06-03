@@ -27,7 +27,7 @@ test('attackers - 黑方攻击检测', () => {
 test('isAttacked - 方格是否受攻击', () => {
   // 红车在 e1，黑将在 e9 → e9 受红车攻击
   const chess = new Chess(
-    'rheakaehr/9/1c5c1/p1p1R1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR b - - 0 1',
+    'rnbakabnr/9/1c5c1/p1p1R1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR b - - 0 1',
   )
   expect(chess.isAttacked('e9', WHITE)).toBe(true)
   expect(chess.isAttacked('a0', BLACK)).toBe(false)

@@ -69,14 +69,14 @@ export const BLACK = 'b'
 
 export const KING = 'k'
 export const ADVISOR = 'a'
-export const ELEPHANT = 'e'
-export const HORSE = 'h'
+export const ELEPHANT = 'b'
+export const HORSE = 'n'
 export const ROOK = 'r'
 export const CANNON = 'c'
 export const PAWN = 'p'
 
 export type Color = 'w' | 'b'
-export type PieceSymbol = 'p' | 'h' | 'e' | 'r' | 'c' | 'k' | 'a'
+export type PieceSymbol = 'p' | 'n' | 'b' | 'r' | 'c' | 'k' | 'a'
 
 /*
  * Board: 9 columns (a-i) x 10 ranks (0-9), ranks 0=red back, 9=black back
@@ -132,7 +132,7 @@ export function nagToGlyph(nag: NAG): string | undefined {
 }
 
 export const DEFAULT_POSITION =
-  'rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - 0 1'
+  'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1'
 
 export type Piece = {
   color: Color
@@ -318,8 +318,8 @@ const XQ_SQUARES: Record<Square, number> = {
 const PIECE_OFFSETS: Record<PieceSymbol, number[]> = {
   k: [-16, 1, 16, -1],
   a: [-17, -15, 15, 17],
-  e: [-34, -30, 30, 34],
-  h: [-33, -31, -18, -14, 14, 18, 31, 33],
+  b: [-34, -30, 30, 34],
+  n: [-33, -31, -18, -14, 14, 18, 31, 33],
   r: [-16, 1, 16, -1],
   c: [-16, 1, 16, -1],
   p: [],
@@ -345,7 +345,7 @@ const ELEPHANT_EYES: Record<number, number> = {
   [34]: 17,
 }
 
-const SYMBOLS = 'phreckaPHRECKA'
+const SYMBOLS = 'pnrbckaPNRBCKA'
 
 const SAN_NULLMOVE = '--'
 
@@ -464,7 +464,7 @@ export function validateFen(fen: string): { ok: boolean; error?: string } {
         sumFields += parseInt(rows[i][k], 10)
         previousWasNumber = true
       } else {
-        if (!/^[prheckaPRHECKA]$/.test(rows[i][k])) {
+        if (!/^[pnrbckahePNRBCKAHE]$/.test(rows[i][k])) {
           return {
             ok: false,
             error: 'Invalid FEN: piece data is invalid (invalid piece)',
@@ -495,16 +495,6 @@ export function validateFen(fen: string): { ok: boolean; error?: string } {
 
     if ((tokens[0].match(regex) || []).length > 1) {
       return { ok: false, error: `Invalid FEN: too many ${color} kings` }
-    }
-  }
-
-  // 10th criterion: no pawns on the first or last ranks
-  if (
-    Array.from(rows[0] + rows[9]).some((char) => char.toUpperCase() === 'P')
-  ) {
-    return {
-      ok: false,
-      error: 'Invalid FEN: pawns cannot be on the edge ranks',
     }
   }
 
@@ -542,8 +532,8 @@ function inferPieceType(san: string): PieceSymbol | undefined {
   pieceType = pieceType.toLowerCase()
   if (pieceType === 'k') return KING
   if (pieceType === 'a') return ADVISOR
-  if (pieceType === 'e') return ELEPHANT
-  if (pieceType === 'h') return HORSE
+  if (pieceType === 'b' || pieceType === 'e') return ELEPHANT
+  if (pieceType === 'n' || pieceType === 'h') return HORSE
   if (pieceType === 'r') return ROOK
   if (pieceType === 'c') return CANNON
   return pieceType as PieceSymbol
@@ -691,8 +681,8 @@ export class Chess {
 
     const typeIndex = {
       p: 0,
-      h: 1,
-      e: 2,
+      n: 1,
+      b: 2,
       r: 3,
       c: 4,
       k: 5,
@@ -1311,7 +1301,7 @@ export class Chess {
           const onOwnSide = us === WHITE ? fromRank <= 4 : fromRank >= 5
           if (!onOwnSide) break
 
-          for (const offset of PIECE_OFFSETS.e) {
+          for (const offset of PIECE_OFFSETS[ELEPHANT]) {
             const to = from + offset
             if (offBoard(to)) continue
             const toR = rank(to)
@@ -1339,7 +1329,7 @@ export class Chess {
         }
 
         case HORSE: {
-          for (const offset of PIECE_OFFSETS.h) {
+          for (const offset of PIECE_OFFSETS[HORSE]) {
             const to = from + offset
             if (offBoard(to)) continue
             // Check leg blocking

@@ -9,7 +9,7 @@ test('isCheckmate - 初始局面不是将杀', () => {
 
 test('isCheckmate - 中局局面不是将杀', () => {
   const chess = new Chess(
-    'rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1CH4C1/9/R1EAKAEHR b - - 1 1',
+    'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1CN4C1/9/R1BAKABNR b - - 1 1',
   )
   expect(chess.isCheckmate()).toBe(false)
 })

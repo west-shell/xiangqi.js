@@ -17,7 +17,7 @@ test('setTurn - 切换走子方返回 true', () => {
 test('setTurn - 被将军时试图空着（setTurn 检测到同色会先返回 false）', () => {
   // 红车将军黑将，黑方被将军
   const chess = new Chess(
-    'rheakaehr/9/1c5c1/p1p1R1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR b - - 0 1',
+    'rnbakabnr/9/1c5c1/p1p1R1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR b - - 0 1',
   )
   // setTurn('b') 先检查：this._turn == 'b'，返回 false，不调用 move
   expect(chess.setTurn('b')).toBe(false)

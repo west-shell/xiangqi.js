@@ -85,11 +85,11 @@ san "Chinese chess algebraic notation"
 WXF_move
 	= (front_back_piece / pawn_piece / piece_col / pawn_col) [+=.x\-][0-9][+#]?
 front_back_piece
-	= [+\-][KAEHRCPkaehrcp]
+	= [+\-][KABENHRCPkabenhrcp]
 pawn_piece
 	= [1-9][Pp]
 piece_col
-	= [KAEHRCPkaehrcp][1-9]
+	= [KABENHRCPkabenhrcp][1-9]
 pawn_col
 	= [1-9]
 ICCS_move

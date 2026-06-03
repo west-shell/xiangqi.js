@@ -31,7 +31,7 @@ test('moves - 初始局面象的着法', () => {
   // 初始局面红方象的眼被塞（被自己的士挡住），没有着法
   // 但实际上在正确的位置，象可以走田字
   const chess = new Chess()
-  const moves = chess.moves({ piece: 'e' })
+  const moves = chess.moves({ piece: 'b' })
   // 象在初始位置的眼 (d1, f1, b1, h1) 是空的，应该有着法
   expect(moves.length).toBeGreaterThanOrEqual(0)
 })
@@ -40,11 +40,11 @@ test('moves - 详解模式', () => {
   const chess = new Chess()
   const moves = chess.moves({ square: 'b0' as Square, verbose: true }) as Move[]
   expect(moves.length).toBe(2)
-  expect(moves[0].piece).toBe('h')
+  expect(moves[0].piece).toBe('n')
 })
 
 test('moves - 指定方格和棋子', () => {
   const chess = new Chess()
-  const moves = chess.moves({ square: 'b0' as Square, piece: 'h' })
+  const moves = chess.moves({ square: 'b0' as Square, piece: 'n' })
   expect(moves).toHaveLength(2)
 })

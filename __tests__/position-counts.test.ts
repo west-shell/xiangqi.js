@@ -5,7 +5,7 @@ import { expect, test } from 'vitest'
 const Chess = ChessClass as any
 const defaultHash = BigInt('0x' + new Chess(DEFAULT_POSITION).hash())
 const afterMoveFen =
-  'rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1CH4C1/9/R1EAKAEHR b - - 1 1'
+  'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1CN4C1/9/R1BAKABNR b - - 1 1'
 const afterMoveHash = BigInt('0x' + new Chess(afterMoveFen).hash())
 
 test('positionCount - 初始局面计数为 1', () => {

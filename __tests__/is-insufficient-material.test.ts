@@ -23,7 +23,7 @@ test('不是子力不足 - 初始局面', () => {
 })
 
 test('不是子力不足 - 将+马 vs 将', () => {
-  const chess = new Chess('4k4/9/9/9/9/9/9/4H4/9/4K4 w - - 0 1')
+  const chess = new Chess('4k4/9/9/9/9/9/9/4N4/9/4K4 w - - 0 1')
   expect(chess.isInsufficientMaterial()).toBe(false)
 })
 

@@ -22,7 +22,7 @@ test('history - 详解模式输出完整着法信息', () => {
   chess.move('b0c2')
   const history = chess.history({ verbose: true })
   expect(history).toHaveLength(1)
-  expect(history[0].piece).toBe('h')
+  expect(history[0].piece).toBe('n')
   expect(history[0].from).toBe('b0')
   expect(history[0].to).toBe('c2')
 })
