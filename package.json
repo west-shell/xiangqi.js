@@ -1,15 +1,15 @@
 {
-  "name": "chess.js",
+  "name": "xiangqi.js",
   "description": "TypeScript library for Chinese chess (Xiangqi) move generation, validation, execution, and game state.",
-  "version": "1.4.0",
+  "version": "1.0.0",
   "license": "BSD-2-Clause",
   "main": "dist/cjs/chess.js",
   "module": "dist/esm/chess.js",
   "types": "dist/types/chess.d.ts",
-  "homepage": "https://github.com/jhlywa/chess.js",
+  "homepage": "https://github.com/west-shell/xiangqi.js",
   "keywords": [
     "xiangqi",
-    "chinese-chess",
+    "Chinese chess",
     "chess",
     "fen",
     "pgn",
@@ -34,7 +34,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/west-shell/chess.js"
+    "url": "https://github.com/west-shell/xiangqi.js"
   },
   "engines": {
     "node": ">=20.0.0"
