@@ -2,6 +2,9 @@ node_modules/
 coverage/
 dist/
 temp/
+.vscode/
+.claude/
+.codegraph
 
 src/pgn.js
 src/pgn.d.ts
