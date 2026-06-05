@@ -93,7 +93,13 @@ const PIECE_CHINESE: Record<PieceSymbol, { red: string; black: string }> = {
 }
 
 const WXF_LETTER: Record<PieceSymbol, string> = {
-  k: 'K', a: 'A', b: 'B', n: 'N', r: 'R', c: 'C', p: 'P',
+  k: 'K',
+  a: 'A',
+  b: 'B',
+  n: 'N',
+  r: 'R',
+  c: 'C',
+  p: 'P',
 }
 
 // Straight-moving pieces: target is step count for advance/retreat
@@ -105,11 +111,7 @@ function playerCol(file: number, color: Color): number {
 }
 
 /** Forward steps (positive = advance, negative = retreat). */
-function forwardSteps(
-  fromRank: number,
-  toRank: number,
-  color: Color,
-): number {
+function forwardSteps(fromRank: number, toRank: number, color: Color): number {
   const direction = color === WHITE ? 1 : -1
   return (toRank - fromRank) * direction
 }
@@ -347,13 +349,13 @@ const XQ_SQUARES: Record<Square, number> = {
   a9: 144, b9: 145, c9: 146, d9: 147, e9: 148, f9: 149, g9: 150, h9: 151, i9: 152,
   a8: 128, b8: 129, c8: 130, d8: 131, e8: 132, f8: 133, g8: 134, h8: 135, i8: 136,
   a7: 112, b7: 113, c7: 114, d7: 115, e7: 116, f7: 117, g7: 118, h7: 119, i7: 120,
-  a6:  96, b6:  97, c6:  98, d6:  99, e6: 100, f6: 101, g6: 102, h6: 103, i6: 104,
-  a5:  80, b5:  81, c5:  82, d5:  83, e5:  84, f5:  85, g5:  86, h5:  87, i5:  88,
-  a4:  64, b4:  65, c4:  66, d4:  67, e4:  68, f4:  69, g4:  70, h4:  71, i4:  72,
-  a3:  48, b3:  49, c3:  50, d3:  51, e3:  52, f3:  53, g3:  54, h3:  55, i3:  56,
-  a2:  32, b2:  33, c2:  34, d2:  35, e2:  36, f2:  37, g2:  38, h2:  39, i2:  40,
-  a1:  16, b1:  17, c1:  18, d1:  19, e1:  20, f1:  21, g1:  22, h1:  23, i1:  24,
-  a0:   0, b0:   1, c0:   2, d0:   3, e0:   4, f0:   5, g0:   6, h0:   7, i0:   8,
+  a6: 96, b6: 97, c6: 98, d6: 99, e6: 100, f6: 101, g6: 102, h6: 103, i6: 104,
+  a5: 80, b5: 81, c5: 82, d5: 83, e5: 84, f5: 85, g5: 86, h5: 87, i5: 88,
+  a4: 64, b4: 65, c4: 66, d4: 67, e4: 68, f4: 69, g4: 70, h4: 71, i4: 72,
+  a3: 48, b3: 49, c3: 50, d3: 51, e3: 52, f3: 53, g3: 54, h3: 55, i3: 56,
+  a2: 32, b2: 33, c2: 34, d2: 35, e2: 36, f2: 37, g2: 38, h2: 39, i2: 40,
+  a1: 16, b1: 17, c1: 18, d1: 19, e1: 20, f1: 21, g1: 22, h1: 23, i1: 24,
+  a0: 0, b0: 1, c0: 2, d0: 3, e0: 4, f0: 5, g0: 6, h0: 7, i0: 8,
 }
 
 // Piece offsets in the 16-per-rank system
@@ -1187,28 +1189,10 @@ export class Chess {
 
   moves({ square, piece }: { square: Square; piece: PieceSymbol }): string[]
 
-  moves({
-    Chinese,
-    square,
-  }: {
-    Chinese: true
-    square?: Square
-  }): string[]
-  moves({
-    Chinese,
-    square,
-  }: {
-    Chinese?: boolean
-    square?: Square
-  }): string[]
+  moves({ Chinese, square }: { Chinese: true; square?: Square }): string[]
+  moves({ Chinese, square }: { Chinese?: boolean; square?: Square }): string[]
 
-  moves({
-    Chinese,
-    piece,
-  }: {
-    Chinese: true
-    piece?: PieceSymbol
-  }): string[]
+  moves({ Chinese, piece }: { Chinese: true; piece?: PieceSymbol }): string[]
   moves({
     Chinese,
     piece,
@@ -1953,52 +1937,161 @@ export class Chess {
     }
   }
 
-  // Convert a move to Chinese notation (e.g., "炮二平五")
+  /**
+   * 将内部着法转换为中文记谱（例如“炮二平五”）
+   * 兵卒使用复杂编号，其他棋子同列多个时用前/中/后，单个时用列号。
+  /**
+   * 将内部着法转换为中文记谱（例如“炮二平五” / “前车退二”）
+   * 采用翻转棋盘统一红黑坐标的逻辑：
+   * - 统一将棋盘转为执棋方视角，y=0 为对手方向（前方）
+   * - 仕/士、相/象：始终使用列号（同一纵线不用前/后）
+   * - 兵/卒：按 WXF 规范处理复杂编号
+   * - 其他棋子（车/马/炮）：同列多个时用前/中/后，单个时用列号
+   */
   private _moveToSan(move: InternalMove): string {
     if (move.flags & BITS.NULL_MOVE) {
       return SAN_NULLMOVE
     }
 
     const { piece, color, from, to } = move
-    const fromF = file(from),
-      toF = file(to)
-    const fromR = rank(from),
-      toR = rank(to)
+    const pieceChar = PIECE_CHINESE[piece][color === WHITE ? 'red' : 'black']
+    const isRed = color === WHITE
+    const numbers = isRed
+      ? ['一', '二', '三', '四', '五', '六', '七', '八', '九']
+      : ['1', '2', '3', '4', '5', '6', '7', '8', '9']
 
-    const name = PIECE_CHINESE[piece][color === WHITE ? 'red' : 'black']
+    const BOARD: (Piece | null)[][] = Array.from({ length: 9 }, () =>
+      Array<Piece | null>(10).fill(null),
+    )
+    let fromX: number, fromY: number, toX: number, toY: number
 
-    // Column label (handle disambiguation 前/后)
-    const dis = this._colDisambiguate(piece, color, fromF, fromR)
-    let col: string
-    if (dis) {
-      col = dis
+    if (isRed) {
+      for (let x = 0; x < 9; x++) {
+        for (let y = 0; y < 10; y++) {
+          BOARD[x][y] = this._board[(9 - y) * 16 + (8 - x)]
+        }
+      }
+      fromX = 8 - file(from)
+      fromY = 9 - rank(from)
+      toX = 8 - file(to)
+      toY = 9 - rank(to)
     } else {
-      const n = playerCol(fromF, color)
-      col = color === WHITE ? RED_NUMERALS[n] : String(n)
+      for (let x = 0; x < 9; x++) {
+        for (let y = 0; y < 10; y++) {
+          BOARD[x][y] = this._board[y * 16 + x]
+        }
+      }
+      fromX = file(from)
+      fromY = rank(from)
+      toX = file(to)
+      toY = rank(to)
     }
 
-    // Action & target
-    let action: string, target: string
-    if (fromR === toR) {
-      action = '平'
-      const n = playerCol(toF, color)
-      target = color === WHITE ? RED_NUMERALS[n] : String(n)
-    } else {
-      const steps = forwardSteps(fromR, toR, color)
-      action = steps > 0 ? '进' : '退'
+    let prefix: string
 
-      if (STRAIGHT_PIECES.has(piece)) {
-        const n = Math.abs(steps)
-        target = color === WHITE ? RED_NUMERALS[n] : String(n)
+    if (piece === 'a' || piece === 'b') {
+      prefix = pieceChar + numbers[fromX]
+    } else if (piece === 'p') {
+      prefix = this._pawnPrefix(piece, color, pieceChar, numbers, BOARD, fromX, fromY)
+    } else {
+      const sameCol: number[] = []
+      for (let y = 0; y < 10; y++) {
+        const p = BOARD[fromX][y]
+        if (p && p.type === piece && p.color === color) {
+          sameCol.push(y)
+        }
+      }
+
+      if (sameCol.length <= 1) {
+        prefix = pieceChar + numbers[fromX]
       } else {
-        const n = playerCol(toF, color)
-        target = color === WHITE ? RED_NUMERALS[n] : String(n)
+        sameCol.sort((a, b) => a - b)
+        const idx = sameCol.indexOf(fromY)
+        if (sameCol.length === 2) {
+          prefix = (idx === 0 ? '前' : '后') + pieceChar
+        } else if (sameCol.length === 3) {
+          prefix = (idx === 0 ? '前' : idx === 1 ? '中' : '后') + pieceChar
+        } else {
+          const labelNums = ['一', '二', '三', '四', '五']
+          prefix = labelNums[idx] + pieceChar
+        }
       }
     }
 
-    return `${name}${col}${action}${target}`
+    let action: string, target: string
+    if (fromY === toY) {
+      action = '平'
+      target = numbers[toX]
+    } else {
+      const forward = toY < fromY
+      action = forward ? '进' : '退'
+
+      if (piece === 'r' || piece === 'c' || piece === 'k' || piece === 'p') {
+        const steps = Math.abs(toY - fromY)
+        target = numbers[steps - 1]
+      } else {
+        target = numbers[toX]
+      }
+    }
+
+    return prefix + action + target
   }
 
+  /** 兵/卒专用前缀生成（按 WXF 规范处理复杂编号） */
+  private _pawnPrefix(
+    piece: PieceSymbol,
+    color: Color,
+    pieceChar: string,
+    numbers: string[],
+    BOARD: (Piece | null)[][],
+    fromX: number,
+    fromY: number,
+  ): string {
+    const colMap = new Map<number, number[]>()
+    for (let x = 0; x < 9; x++) {
+      for (let y = 0; y < 10; y++) {
+        const p = BOARD[x][y]
+        if (p && p.type === piece && p.color === color) {
+          if (!colMap.has(x)) colMap.set(x, [])
+          colMap.get(x)!.push(y)
+        }
+      }
+    }
+    for (const rows of colMap.values()) {
+      rows.sort((a, b) => a - b)
+    }
+
+    const multiCols = [...colMap.entries()]
+      .filter(([, rows]) => rows.length > 1)
+      .map(([x]) => x)
+
+    if (!multiCols.includes(fromX)) {
+      return pieceChar + numbers[fromX]
+    }
+
+    const rows = colMap.get(fromX)!
+    const idx = rows.indexOf(fromY)
+
+    if (multiCols.length === 1) {
+      if (rows.length === 2) return (idx === 0 ? '前' : '后') + pieceChar
+      if (rows.length === 3) {
+        return (idx === 0 ? '前' : idx === 1 ? '中' : '后') + pieceChar
+      }
+      const labels = ['一', '二', '三', '四', '五']
+      return labels[idx] + pieceChar
+    }
+
+    const sortedCols = [...multiCols].sort((a, b) => a - b)
+    const allPawns: { x: number; y: number }[] = []
+    for (const x of sortedCols) {
+      for (const y of colMap.get(x)!) {
+        allPawns.push({ x, y })
+      }
+    }
+    const globalIdx = allPawns.findIndex(p => p.x === fromX && p.y === fromY)
+    const labels = ['一', '二', '三', '四', '五']
+    return labels[globalIdx] + pieceChar
+  }
   // Convert a move to WXF notation (e.g., "C2.5")
   private _moveToWxf(move: InternalMove): string {
     const { piece, color, from, to } = move
@@ -2030,30 +2123,6 @@ export class Chess {
       return SAN_NULLMOVE
     }
     return algebraic(move.from) + algebraic(move.to)
-  }
-
-  /** 前/后 disambiguation when multiple same-type pieces share a column. */
-  private _colDisambiguate(
-    piece: PieceSymbol,
-    color: Color,
-    fromFile: number,
-    fromRank: number,
-  ): string {
-    const forward = color === WHITE ? 1 : -1
-    const startRank = forward > 0 ? 9 : 0
-    const endRank = forward > 0 ? -1 : 10
-
-    const found: number[] = []
-    for (let r = startRank; r !== endRank; r -= forward) {
-      const sq = r * 16 + fromFile
-      const p = this._board[sq]
-      if (p && p.type === piece && p.color === color) {
-        found.push(r)
-      }
-    }
-
-    if (found.length <= 1) return ''
-    return found.indexOf(fromRank) === 0 ? '前' : '后'
   }
 
   // Convert from SAN (WXF/ICCS notation) to internal move
