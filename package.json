@@ -7,14 +7,7 @@
   "module": "dist/esm/chess.js",
   "types": "dist/types/chess.d.ts",
   "homepage": "https://github.com/west-shell/xiangqi.js",
-  "keywords": [
-    "xiangqi",
-    "Chinese chess",
-    "chess",
-    "fen",
-    "pgn",
-    "typescript"
-  ],
+  "keywords": ["xiangqi", "Chinese chess", "chess", "fen", "pgn", "typescript"],
   "author": "weshell <weshell@foxmail.com>",
   "scripts": {
     "prepare": "npm run build",
