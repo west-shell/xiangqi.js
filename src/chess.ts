@@ -437,50 +437,54 @@ function crossedRiver(color: Color, r: number): boolean {
 }
 
 export function validateFen(fen: string): { ok: boolean; error?: string } {
-  // 1st criterion: 6 space-separated fields?
+  // 1st criterion: at least 1 field (position), up to 6
   const tokens = fen.split(/\s+/)
-  if (tokens.length !== 6) {
+  if (tokens.length < 1 || tokens.length > 6) {
     return {
       ok: false,
-      error: 'Invalid FEN: must contain six space-delimited fields',
+      error: 'Invalid FEN: must contain 1 to 6 space-delimited fields',
     }
   }
 
-  // 2nd criterion: move number field is an integer value > 0?
-  const moveNumber = parseInt(tokens[5], 10)
-  if (isNaN(moveNumber) || moveNumber <= 0) {
-    return {
-      ok: false,
-      error: 'Invalid FEN: move number must be a positive integer',
+  if (tokens.length >= 6) {
+    const moveNumber = parseInt(tokens[5], 10)
+    if (isNaN(moveNumber) || moveNumber <= 0) {
+      return {
+        ok: false,
+        error: 'Invalid FEN: move number must be a positive integer',
+      }
     }
   }
 
-  // 3rd criterion: half move counter is an integer >= 0?
-  const halfMoves = parseInt(tokens[4], 10)
-  if (isNaN(halfMoves) || halfMoves < 0) {
-    return {
-      ok: false,
-      error:
-        'Invalid FEN: half move counter number must be a non-negative integer',
+  if (tokens.length >= 5) {
+    const halfMoves = parseInt(tokens[4], 10)
+    if (isNaN(halfMoves) || halfMoves < 0) {
+      return {
+        ok: false,
+        error: 'Invalid FEN: half move counter must be a non-negative integer',
+      }
     }
   }
 
-  // 4th criterion: 4th field is a valid e.p.-string? (always '-' for Xiangqi)
-  if (tokens[3] !== '-') {
-    return { ok: false, error: 'Invalid FEN: en-passant square must be "-"' }
-  }
-
-  // 5th criterion: 3rd field is a valid castle-string? (always '-' for Xiangqi)
-  if (tokens[2] !== '-') {
-    return {
-      ok: false,
-      error: 'Invalid FEN: castling availability must be "-"',
+  if (tokens.length >= 4) {
+    if (tokens[3] !== '-') {
+      return { ok: false, error: 'Invalid FEN: en-passant must be "-"' }
     }
   }
 
-  // 6th criterion: 2nd field is "w" (white/red) or "b" (black)?
-  if (!/^(w|b)$/.test(tokens[1])) {
-    return { ok: false, error: 'Invalid FEN: side-to-move is invalid' }
+  if (tokens.length >= 3) {
+    if (tokens[2] !== '-') {
+      return {
+        ok: false,
+        error: 'Invalid FEN: castling must be "-"',
+      }
+    }
+  }
+
+  if (tokens.length >= 2) {
+    if (!/^(w|b)$/.test(tokens[1])) {
+      return { ok: false, error: 'Invalid FEN: side-to-move is invalid' }
+    }
   }
 
   // 7th criterion: 1st field contains 10 rows?
@@ -632,8 +636,8 @@ export class Chess {
     let tokens = fen.split(/\s+/)
 
     // append commonly omitted fen tokens
-    if (tokens.length >= 2 && tokens.length < 6) {
-      const adjustments = ['-', '-', '0', '1']
+    if (tokens.length >= 1 && tokens.length < 6) {
+      const adjustments = ['w', '-', '-', '0', '1']
       fen = tokens.concat(adjustments.slice(-(6 - tokens.length))).join(' ')
     }
 

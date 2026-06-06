@@ -55,3 +55,13 @@ test('_moveToZh - 士象', () => {
     const move2 = chess.move({ from: 'd7', to: 'e8' })
     expect(move2.zh).toBe('士4退5')
 })
+
+test('FEN - 只传棋子排列，默认红方先行', () => {
+    const chess = new Chess('rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR')
+    expect(chess.fen()).toBe('rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1')
+})
+
+test('FEN - 只传棋子排列+走子方', () => {
+    const chess = new Chess('rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR b')
+    expect(chess.fen()).toBe('rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR b - - 0 1')
+})
