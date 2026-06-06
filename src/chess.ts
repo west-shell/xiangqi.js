@@ -203,7 +203,7 @@ export class Move {
 
   flags: string
 
-  san: string
+  zh: string
   lan: string
   before: string
   after: string
@@ -212,7 +212,7 @@ export class Move {
 
   constructor(
     internal: InternalMove,
-    san: string,
+    zh: string,
     before: string,
     after: string,
     wxf: string,
@@ -225,7 +225,7 @@ export class Move {
     this.from = algebraic(from)
     this.to = algebraic(to)
 
-    this.san = san
+    this.zh = zh
     this.lan = algebraic(from) + algebraic(to)
     this.before = before
     this.after = after
@@ -1170,17 +1170,17 @@ export class Chess {
   }
 
   private _createMove(internal: InternalMove) {
-    const san = this._moveToSan(internal)
+    const wxf = this._moveToWxf(internal)
     const before = this.fen()
 
     this._makeMove(internal)
     const after = this.fen()
     this._undoMove()
 
-    const wxf = this._moveToWxf(internal)
+    const zh = this._moveToZh(wxf, internal.color)
     const iccs = this._moveToIccs(internal)
 
-    return new Move(internal, san, before, after, wxf, iccs)
+    return new Move(internal, zh, before, after, wxf, iccs)
   }
 
   moves(): string[]
@@ -1287,8 +1287,10 @@ export class Chess {
       return moves.map((move) => this._createMove(move))
     }
 
-    const toSan = Chinese ? this._moveToSan : this._moveToIccs
-    return moves.map((move) => toSan.call(this, move))
+    const toZh = Chinese
+      ? (move: InternalMove) => this._moveToZh(this._moveToWxf(move), move.color)
+      : (move: InternalMove) => this._moveToLan(move)
+    return moves.map(toZh)
   }
 
   private _moves({
@@ -1761,7 +1763,7 @@ export class Chess {
         moveString = this._moveNumber + '.'
       }
 
-      moveString = moveString + ' ' + this._moveToIccs(move)
+      moveString = moveString + ' ' + this._moveToLan(move)
       this._makeMove(move)
     }
 
@@ -1948,17 +1950,18 @@ export class Chess {
    * - 兵/卒：按 WXF 规范处理复杂编号
    * - 其他棋子（车/马/炮）：同列多个时用前/中/后，单个时用列号
    */
-  private _moveToSan(move: InternalMove): string {
+  /** Coordinate -> WXF notation (e.g., 'C2.5', '+R-2', 'aP.3') */
+  private _moveToWxf(move: InternalMove): string {
     if (move.flags & BITS.NULL_MOVE) {
-      return SAN_NULLMOVE
+      return '--'
     }
 
     const { piece, color, from, to } = move
-    const pieceChar = PIECE_CHINESE[piece][color === WHITE ? 'red' : 'black']
     const isRed = color === WHITE
-    const numbers = isRed
-      ? ['一', '二', '三', '四', '五', '六', '七', '八', '九']
-      : ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+    const letter = WXF_LETTER[piece]
+    const pieceLetter = isRed ? letter : letter.toLowerCase()
+    const labels = ['a', 'b', 'c', 'd', 'e']
+    const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
 
     const BOARD: (Piece | null)[][] = Array.from({ length: 9 }, () =>
       Array<Piece | null>(10).fill(null),
@@ -1990,9 +1993,9 @@ export class Chess {
     let prefix: string
 
     if (piece === 'a' || piece === 'b') {
-      prefix = pieceChar + numbers[fromX]
+      prefix = pieceLetter + numbers[fromX]
     } else if (piece === 'p') {
-      prefix = this._pawnPrefix(piece, color, pieceChar, numbers, BOARD, fromX, fromY)
+      prefix = this._wxfPawnPrefix(piece, color, pieceLetter, labels, numbers, BOARD, fromX, fromY)
     } else {
       const sameCol: number[] = []
       for (let y = 0; y < 10; y++) {
@@ -2003,28 +2006,27 @@ export class Chess {
       }
 
       if (sameCol.length <= 1) {
-        prefix = pieceChar + numbers[fromX]
+        prefix = pieceLetter + numbers[fromX]
       } else {
         sameCol.sort((a, b) => a - b)
         const idx = sameCol.indexOf(fromY)
         if (sameCol.length === 2) {
-          prefix = (idx === 0 ? '前' : '后') + pieceChar
+          prefix = (idx === 0 ? '+' : '-') + pieceLetter
         } else if (sameCol.length === 3) {
-          prefix = (idx === 0 ? '前' : idx === 1 ? '中' : '后') + pieceChar
+          prefix = (idx === 0 ? '+' : idx === 1 ? '.' : '-') + pieceLetter
         } else {
-          const labelNums = ['一', '二', '三', '四', '五']
-          prefix = labelNums[idx] + pieceChar
+          prefix = labels[idx] + pieceLetter
         }
       }
     }
 
     let action: string, target: string
     if (fromY === toY) {
-      action = '平'
+      action = '.'
       target = numbers[toX]
     } else {
       const forward = toY < fromY
-      action = forward ? '进' : '退'
+      action = forward ? '+' : '-'
 
       if (piece === 'r' || piece === 'c' || piece === 'k' || piece === 'p') {
         const steps = Math.abs(toY - fromY)
@@ -2037,11 +2039,12 @@ export class Chess {
     return prefix + action + target
   }
 
-  /** 兵/卒专用前缀生成（按 WXF 规范处理复杂编号） */
-  private _pawnPrefix(
+  /** WXF pawn prefix: {a-e}{piece} or {+-.}{piece} or {piece}{col} */
+  private _wxfPawnPrefix(
     piece: PieceSymbol,
     color: Color,
-    pieceChar: string,
+    pieceLetter: string,
+    labels: string[],
     numbers: string[],
     BOARD: (Piece | null)[][],
     fromX: number,
@@ -2066,19 +2069,18 @@ export class Chess {
       .map(([x]) => x)
 
     if (!multiCols.includes(fromX)) {
-      return pieceChar + numbers[fromX]
+      return pieceLetter + numbers[fromX]
     }
 
     const rows = colMap.get(fromX)!
     const idx = rows.indexOf(fromY)
 
     if (multiCols.length === 1) {
-      if (rows.length === 2) return (idx === 0 ? '前' : '后') + pieceChar
+      if (rows.length === 2) return (idx === 0 ? '+' : '-') + pieceLetter
       if (rows.length === 3) {
-        return (idx === 0 ? '前' : idx === 1 ? '中' : '后') + pieceChar
+        return (idx === 0 ? '+' : idx === 1 ? '.' : '-') + pieceLetter
       }
-      const labels = ['一', '二', '三', '四', '五']
-      return labels[idx] + pieceChar
+      return labels[idx] + pieceLetter
     }
 
     const sortedCols = [...multiCols].sort((a, b) => a - b)
@@ -2089,40 +2091,83 @@ export class Chess {
       }
     }
     const globalIdx = allPawns.findIndex(p => p.x === fromX && p.y === fromY)
-    const labels = ['一', '二', '三', '四', '五']
-    return labels[globalIdx] + pieceChar
+    return labels[globalIdx] + pieceLetter
   }
-  // Convert a move to WXF notation (e.g., "C2.5")
-  private _moveToWxf(move: InternalMove): string {
-    const { piece, color, from, to } = move
-    const fromF = file(from),
-      toF = file(to)
-    const fromR = rank(from),
-      toR = rank(to)
 
-    const letter = WXF_LETTER[piece]
-    const l = color === WHITE ? letter : letter.toLowerCase()
-    const col = playerCol(fromF, color)
+  /** WXF -> Chinese notation (text substitution) */
+  private _moveToZh(wxf: string, color: Color): string {
+    if (wxf === '--') return '--'
+    const isRed = color === WHITE
+    const redNums = [
+      '\u4e00', '\u4e8c', '\u4e09', '\u56db', '\u4e94',
+      '\u516d', '\u4e03', '\u516b', '\u4e5d',
+    ]
 
-    let action: string, target: number
-    if (fromR === toR) {
-      action = '.'
-      target = playerCol(toF, color)
-    } else {
-      const steps = forwardSteps(fromR, toR, color)
-      action = steps > 0 ? '+' : '-'
-      target = Math.abs(steps)
+    const PIECE_REV: Record<string, string> = {
+      'K': '\u5e05', 'k': '\u5c06',
+      'A': '\u4ed5', 'a': '\u58eb',
+      'B': '\u76f8', 'b': '\u8c61',
+      'N': '\u9a6c', 'n': '\u9a6c',
+      'R': '\u8f66', 'r': '\u8f66',
+      'C': '\u70ae', 'c': '\u70ae',
+      'P': '\u5175', 'p': '\u5352',
     }
 
-    return `${l}${col}${action}${target}`
-  }
+    const re = /^([+\-.a-e])?([A-Za-z])(\d)?([+\-.])(\d)$/
+    const m = wxf.match(re)
+    if (!m) return wxf
 
-  // Convert a move to ICCS notation (e.g., "h2e2")
-  private _moveToIccs(move: InternalMove): string {
+    const prefix = m[1] || ''
+    const pieceKey = m[2]
+    const col = m[3] || ''
+    const action = m[4]
+    const target = m[5]
+
+    const pieceChar = PIECE_REV[pieceKey]
+    if (!pieceChar) return wxf
+
+    let zhPrefix = ''
+    if (prefix === '+') zhPrefix = '\u524d'
+    else if (prefix === '.') zhPrefix = '\u4e2d'
+    else if (prefix === '-') zhPrefix = '\u540e'
+    else if (prefix === 'a') zhPrefix = '\u4e00'
+    else if (prefix === 'b') zhPrefix = '\u4e8c'
+    else if (prefix === 'c') zhPrefix = '\u4e09'
+    else if (prefix === 'd') zhPrefix = '\u56db'
+    else if (prefix === 'e') zhPrefix = '\u4e94'
+
+    let zhAction: string
+    if (action === '.') zhAction = '\u5e73'
+    else if (action === '+') zhAction = '\u8fdb'
+    else zhAction = '\u9000'
+
+    const toZhNum = (n: string) => isRed ? redNums[parseInt(n) - 1] : n
+
+    let zh: string
+    if (zhPrefix) {
+      zh = zhPrefix + pieceChar + zhAction + toZhNum(target)
+    } else {
+      zh = pieceChar + toZhNum(col) + zhAction + toZhNum(target)
+    }
+
+    return zh
+  }
+  /** LAN format: lowercase source+target (e.g., 'b0c2') */
+  private _moveToLan(move: InternalMove): string {
     if (move.flags & BITS.NULL_MOVE) {
       return SAN_NULLMOVE
     }
     return algebraic(move.from) + algebraic(move.to)
+  }
+
+  /** ICCS format: uppercase with dash (e.g., 'B0-C2') */
+  private _moveToIccs(move: InternalMove): string {
+    if (move.flags & BITS.NULL_MOVE) {
+      return SAN_NULLMOVE
+    }
+    const fromSq = algebraic(move.from)
+    const toSq = algebraic(move.to)
+    return fromSq.toUpperCase() + '-' + toSq.toUpperCase()
   }
 
   // Convert from SAN (WXF/ICCS notation) to internal move
@@ -2145,7 +2190,7 @@ export class Chess {
     let moves = this._moves({ legal: true, piece: pieceType })
 
     for (let i = 0; i < moves.length; i++) {
-      if (cleanMove === strippedSan(this._moveToIccs(moves[i]))) {
+      if (cleanMove === strippedSan(this._moveToLan(moves[i]))) {
         return moves[i]
       }
     }
@@ -2351,7 +2396,7 @@ export class Chess {
       if (verbose) {
         moveHistory.push(this._createMove(move))
       } else {
-        moveHistory.push(this._moveToIccs(move))
+        moveHistory.push(this._moveToLan(move))
       }
       this._makeMove(move)
     }
