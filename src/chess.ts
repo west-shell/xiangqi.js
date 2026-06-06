@@ -209,6 +209,8 @@ export class Move {
   after: string
   wxf: string
   iccs: string
+  isCheck: boolean
+  isCheckmate: boolean
 
   constructor(
     internal: InternalMove,
@@ -217,6 +219,8 @@ export class Move {
     after: string,
     wxf: string,
     iccs: string,
+    isCheck = false,
+    isCheckmate = false,
   ) {
     const { color, piece, from, to, flags, captured } = internal
 
@@ -231,6 +235,8 @@ export class Move {
     this.after = after
     this.wxf = wxf
     this.iccs = iccs
+    this.isCheck = isCheck
+    this.isCheckmate = isCheckmate
 
     this.flags = ''
     for (const flag in BITS) {
@@ -1179,12 +1185,14 @@ export class Chess {
 
     this._makeMove(internal)
     const after = this.fen()
+    const isCheck = this.isCheck()
+    const isCheckmate = this.isCheckmate()
     this._undoMove()
 
     const zh = this._moveToZh(wxf, internal.color)
     const iccs = this._moveToIccs(internal)
 
-    return new Move(internal, zh, before, after, wxf, iccs)
+    return new Move(internal, zh, before, after, wxf, iccs, isCheck, isCheckmate)
   }
 
   moves(): string[]
