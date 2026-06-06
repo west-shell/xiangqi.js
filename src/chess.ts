@@ -614,6 +614,8 @@ export class Chess {
 
   // tracks number of times a position has been seen for repetition checking
   private _positionCount = new Map<bigint, number>()
+  private _isCheck = false
+  private _isCheckmate = false
 
   constructor(fen = DEFAULT_POSITION, { skipValidation = false } = {}) {
     this._comments = {}
@@ -1185,8 +1187,8 @@ export class Chess {
 
     this._makeMove(internal)
     const after = this.fen()
-    const isCheck = this.isCheck()
-    const isCheckmate = this.isCheckmate()
+    const isCheck = this._isCheck
+    const isCheckmate = isCheck && this.isCheckmate()
     this._undoMove()
 
     const zh = this._moveToZh(wxf, internal.color)
@@ -1672,6 +1674,8 @@ export class Chess {
 
     this._turn = them
     this._hash ^= SIDE_KEY
+    this._isCheck = this._isKingAttacked(them)
+    this._isCheckmate = false
   }
 
   undo(): Move | null {
@@ -1719,6 +1723,8 @@ export class Chess {
       this._set(move.to, { type: move.captured, color: them })
     }
 
+    this._isCheck = this._isKingAttacked(this._turn)
+    this._isCheckmate = false
     return move
   }
 
