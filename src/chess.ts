@@ -26,6 +26,7 @@
  */
 
 import { parse } from './pgn'
+import { Move } from './move'
 
 const MASK64 = 0xffffffffffffffffn
 
@@ -192,71 +193,6 @@ interface History {
   turn: Color
   halfMoves: number
   moveNumber: number
-}
-
-export class Move {
-  color: Color
-  from: Square
-  to: Square
-  piece: PieceSymbol
-  captured?: PieceSymbol
-
-  flags: string
-
-  zh: string
-  lan: string
-  before: string
-  after: string
-  wxf: string
-  iccs: string
-  isCheck: boolean
-  isCheckmate: boolean
-
-  constructor(
-    internal: InternalMove,
-    zh: string,
-    before: string,
-    after: string,
-    wxf: string,
-    iccs: string,
-    isCheck = false,
-    isCheckmate = false,
-  ) {
-    const { color, piece, from, to, flags, captured } = internal
-
-    this.color = color
-    this.piece = piece
-    this.from = algebraic(from)
-    this.to = algebraic(to)
-
-    this.zh = zh
-    this.lan = algebraic(from) + algebraic(to)
-    this.before = before
-    this.after = after
-    this.wxf = wxf
-    this.iccs = iccs
-    this.isCheck = isCheck
-    this.isCheckmate = isCheckmate
-
-    this.flags = ''
-    for (const flag in BITS) {
-      if (BITS[flag] & flags) {
-        this.flags += FLAGS[flag]
-      }
-    }
-
-    if (captured) {
-      this.captured = captured
-    }
-  }
-
-  isCapture() {
-    return this.flags.indexOf(FLAGS['CAPTURE']) > -1
-  }
-
-  isNullMove() {
-    return this.flags.indexOf(FLAGS['NULL_MOVE']) > -1
-  }
 }
 
 const EMPTY = -1
