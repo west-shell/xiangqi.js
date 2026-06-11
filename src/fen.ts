@@ -170,8 +170,12 @@ export function parseFen(
       file += parseInt(piece, 10)
     } else {
       const color = piece < 'a' ? WHITE : BLACK
+      let type = piece.toLowerCase()
+      // Normalize alternate piece letters accepted by validateFen
+      if (type === 'e') type = 'b'  // elephant alternate
+      else if (type === 'h') type = 'n'  // horse alternate
       board[rank * 16 + file] = {
-        type: piece.toLowerCase() as PieceSymbol,
+        type: type as PieceSymbol,
         color,
       }
       file++
