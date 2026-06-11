@@ -105,8 +105,7 @@ export { xoroshiro128 } from './hash'
 export { validateFen } from './fen'
 export { Move } from './move'
 
-// Must import SQUARES for re-export above
-// === Chess class ===
+/* === Chess class === */
 
 export class Chess {
   private _board = new Array<Piece>(160)
@@ -452,33 +451,33 @@ export class Chess {
 
   moves({ square, piece }: { square: Square; piece: PieceSymbol }): string[]
 
-  moves({ Chinese, square }: { Chinese: true; square?: Square }): string[]
-  moves({ Chinese, square }: { Chinese?: boolean; square?: Square }): string[]
+  moves({ chinese, square }: { chinese: true; square?: Square }): string[]
+  moves({ chinese, square }: { chinese?: boolean; square?: Square }): string[]
 
-  moves({ Chinese, piece }: { Chinese: true; piece?: PieceSymbol }): string[]
+  moves({ chinese, piece }: { chinese: true; piece?: PieceSymbol }): string[]
   moves({
-    Chinese,
+    chinese,
     piece,
   }: {
-    Chinese?: boolean
+    chinese?: boolean
     piece?: PieceSymbol
   }): string[]
 
   moves({
-    Chinese,
+    chinese,
     square,
     piece,
   }: {
-    Chinese: true
+    chinese: true
     square?: Square
     piece?: PieceSymbol
   }): string[]
   moves({
-    Chinese,
+    chinese,
     square,
     piece,
   }: {
-    Chinese?: boolean
+    chinese?: boolean
     square?: Square
     piece?: PieceSymbol
   }): string[]
@@ -535,12 +534,12 @@ export class Chess {
 
   moves({
     verbose = false,
-    Chinese = false,
+    chinese = false,
     square = undefined,
     piece = undefined,
   }: {
     verbose?: boolean
-    Chinese?: boolean
+    chinese?: boolean
     square?: Square
     piece?: PieceSymbol
   } = {}) {
@@ -550,7 +549,7 @@ export class Chess {
       return moves.map((move) => this._createMove(move))
     }
 
-    const toZh = Chinese
+    const toZh = chinese
       ? (move: InternalMove) =>
           moveToZh(moveToWxf(this._board, move), move.color)
       : (move: InternalMove) => moveToLan(move)

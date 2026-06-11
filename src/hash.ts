@@ -25,8 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { Color, Piece, WHITE, BLACK, MASK64 } from './types'
-import { XQ_SQUARES } from './types'
+import { Color, Piece, MASK64, XQ_SQUARES } from './types'
 
 function rotl(x: bigint, k: bigint): bigint {
   return ((x << k) | (x >> (64n - k))) & 0xffffffffffffffffn

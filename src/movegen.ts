@@ -39,7 +39,6 @@ import {
   CANNON,
   PAWN,
   WHITE,
-  BLACK,
   XQ_SQUARES,
   PIECE_OFFSETS,
   HORSE_LEGS,

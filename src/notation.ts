@@ -32,7 +32,6 @@ import {
   InternalMove,
   BITS,
   WHITE,
-  BLACK,
   PAWN,
   KING,
   ADVISOR,
@@ -42,12 +41,10 @@ import {
   CANNON,
   SAN_NULLMOVE,
   WXF_LETTER,
-  RED_NUMERALS,
   XQ_SQUARES,
-  STRAIGHT_PIECES,
   Square,
 } from './types'
-import { algebraic, file, rank, offBoard } from './board'
+import { algebraic, file, rank } from './board'
 
 // === Helper functions ===
 
@@ -172,14 +169,14 @@ export function wxfPawnPrefix(
   pieceLetter: string,
   labels: string[],
   numbers: string[],
-  BOARD: (Piece | null)[][],
+  board2d: (Piece | null)[][],
   fromX: number,
   fromY: number,
 ): string {
   const colMap = new Map<number, number[]>()
   for (let x = 0; x < 9; x++) {
     for (let y = 0; y < 10; y++) {
-      const p = BOARD[x][y]
+      const p = board2d[x][y]
       if (p && p.type === piece && p.color === color) {
         if (!colMap.has(x)) colMap.set(x, [])
         colMap.get(x)!.push(y)
@@ -320,7 +317,7 @@ export function moveFromSan(
 
   // Try strict match against all legal moves
   const pieceType = inferPieceType(cleanMove)
-  let candidateMoves = pieceType
+  const candidateMoves = pieceType
     ? legalMoves.filter(m => m.piece === pieceType)
     : legalMoves
 
