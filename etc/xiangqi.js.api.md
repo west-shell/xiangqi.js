@@ -13,7 +13,7 @@ export const BLACK = "b";
 // @public (undocumented)
 export const CANNON = "c";
 
-// @public (undocumented)
+// @public
 export class Chess {
     constructor(fen?: string, { skipValidation }?: {
         skipValidation?: boolean | undefined;
@@ -135,34 +135,34 @@ export class Chess {
         piece: PieceSymbol;
     }): string[];
     // (undocumented)
-    moves({ Chinese, square, }: {
-        Chinese: true;
+    moves({ chinese, square }: {
+        chinese: true;
         square?: Square;
     }): string[];
     // (undocumented)
-    moves({ Chinese, square, }: {
-        Chinese?: boolean;
+    moves({ chinese, square }: {
+        chinese?: boolean;
         square?: Square;
     }): string[];
     // (undocumented)
-    moves({ Chinese, piece, }: {
-        Chinese: true;
+    moves({ chinese, piece }: {
+        chinese: true;
         piece?: PieceSymbol;
     }): string[];
     // (undocumented)
-    moves({ Chinese, piece, }: {
-        Chinese?: boolean;
+    moves({ chinese, piece, }: {
+        chinese?: boolean;
         piece?: PieceSymbol;
     }): string[];
     // (undocumented)
-    moves({ Chinese, square, piece, }: {
-        Chinese: true;
+    moves({ chinese, square, piece, }: {
+        chinese: true;
         square?: Square;
         piece?: PieceSymbol;
     }): string[];
     // (undocumented)
-    moves({ Chinese, square, piece, }: {
-        Chinese?: boolean;
+    moves({ chinese, square, piece, }: {
+        chinese?: boolean;
         square?: Square;
         piece?: PieceSymbol;
     }): string[];
@@ -283,10 +283,10 @@ export const HORSE = "n";
 // @public (undocumented)
 export const KING = "k";
 
-// @public (undocumented)
+// @public
 export class Move {
     // Warning: (ae-forgotten-export) The symbol "InternalMove" needs to be exported by the entry point chess.d.ts
-    constructor(internal: InternalMove, san: string, before: string, after: string, wxf: string, iccs: string);
+    constructor(internal: InternalMove, zh: string, before: string, after: string, wxf: string, iccs: string, isCheck?: boolean, isCheckmate?: boolean);
     // (undocumented)
     after: string;
     // (undocumented)
@@ -304,17 +304,21 @@ export class Move {
     // (undocumented)
     isCapture(): boolean;
     // (undocumented)
+    isCheck: boolean;
+    // (undocumented)
+    isCheckmate: boolean;
+    // (undocumented)
     isNullMove(): boolean;
     // (undocumented)
     lan: string;
     // (undocumented)
     piece: PieceSymbol;
     // (undocumented)
-    san: string;
-    // (undocumented)
     to: Square;
     // (undocumented)
     wxf: string;
+    // (undocumented)
+    zh: string;
 }
 
 // @public (undocumented)
@@ -375,7 +379,7 @@ export type Suffix = (typeof SUFFIX_LIST)[number];
 // @public (undocumented)
 export const SUFFIX_LIST: readonly ["!", "?", "!!", "!?", "?!", "??"];
 
-// @public (undocumented)
+// @public
 export function validateFen(fen: string): {
     ok: boolean;
     error?: string;
