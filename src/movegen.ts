@@ -45,7 +45,14 @@ import {
   ELEPHANT_EYES,
   BITS,
 } from './types'
-import { rank, file, offBoard, inPalace, crossedRiver, swapColor } from './board'
+import {
+  rank,
+  file,
+  offBoard,
+  inPalace,
+  crossedRiver,
+  swapColor,
+} from './board'
 
 function addMove(
   moves: InternalMove[],
@@ -124,15 +131,7 @@ export function generatePseudoMoves(
           if (!board[to]) {
             addMove(moves, us, from, to, ADVISOR)
           } else if (board[to].color === them) {
-            addMove(
-              moves,
-              us,
-              from,
-              to,
-              ADVISOR,
-              board[to].type,
-              BITS.CAPTURE,
-            )
+            addMove(moves, us, from, to, ADVISOR, board[to].type, BITS.CAPTURE)
           }
         }
         break
@@ -156,15 +155,7 @@ export function generatePseudoMoves(
           if (!board[to]) {
             addMove(moves, us, from, to, ELEPHANT)
           } else if (board[to].color === them) {
-            addMove(
-              moves,
-              us,
-              from,
-              to,
-              ELEPHANT,
-              board[to].type,
-              BITS.CAPTURE,
-            )
+            addMove(moves, us, from, to, ELEPHANT, board[to].type, BITS.CAPTURE)
           }
         }
         break
@@ -180,15 +171,7 @@ export function generatePseudoMoves(
           if (!board[to]) {
             addMove(moves, us, from, to, HORSE)
           } else if (board[to].color === them) {
-            addMove(
-              moves,
-              us,
-              from,
-              to,
-              HORSE,
-              board[to].type,
-              BITS.CAPTURE,
-            )
+            addMove(moves, us, from, to, HORSE, board[to].type, BITS.CAPTURE)
           }
         }
         break
@@ -202,15 +185,7 @@ export function generatePseudoMoves(
               addMove(moves, us, from, to, ROOK)
             } else {
               if (board[to].color === them) {
-                addMove(
-                  moves,
-                  us,
-                  from,
-                  to,
-                  ROOK,
-                  board[to].type,
-                  BITS.CAPTURE,
-                )
+                addMove(moves, us, from, to, ROOK, board[to].type, BITS.CAPTURE)
               }
               break
             }
@@ -235,15 +210,7 @@ export function generatePseudoMoves(
               to += offset
             }
             if (!offBoard(to) && board[to]?.color === them) {
-              addMove(
-                moves,
-                us,
-                from,
-                to,
-                CANNON,
-                board[to].type,
-                BITS.CAPTURE,
-              )
+              addMove(moves, us, from, to, CANNON, board[to].type, BITS.CAPTURE)
             }
           }
         }
@@ -258,15 +225,7 @@ export function generatePseudoMoves(
           if (!board[fwd]) {
             addMove(moves, us, from, fwd, PAWN)
           } else if (board[fwd].color === them) {
-            addMove(
-              moves,
-              us,
-              from,
-              fwd,
-              PAWN,
-              board[fwd].type,
-              BITS.CAPTURE,
-            )
+            addMove(moves, us, from, fwd, PAWN, board[fwd].type, BITS.CAPTURE)
           }
         }
         // Sideways moves (only after crossing river)
@@ -277,15 +236,7 @@ export function generatePseudoMoves(
             if (!board[to]) {
               addMove(moves, us, from, to, PAWN)
             } else if (board[to].color === them) {
-              addMove(
-                moves,
-                us,
-                from,
-                to,
-                PAWN,
-                board[to].type,
-                BITS.CAPTURE,
-              )
+              addMove(moves, us, from, to, PAWN, board[to].type, BITS.CAPTURE)
             }
           }
         }

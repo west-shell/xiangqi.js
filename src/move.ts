@@ -25,14 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-import {
-  Color,
-  PieceSymbol,
-  Square,
-  InternalMove,
-  BITS,
-  FLAGS,
-} from './types'
+import { Color, PieceSymbol, Square, InternalMove, BITS, FLAGS } from './types'
 import { algebraic } from './board'
 
 export class Move {

@@ -195,9 +195,23 @@ export const ELEPHANT_EYES: Record<number, number> = {
 
 // ---- Chinese notation helpers ----
 
-export const RED_NUMERALS = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九']
+export const RED_NUMERALS = [
+  '',
+  '一',
+  '二',
+  '三',
+  '四',
+  '五',
+  '六',
+  '七',
+  '八',
+  '九',
+]
 
-export const PIECE_CHINESE: Record<PieceSymbol, { red: string; black: string }> = {
+export const PIECE_CHINESE: Record<
+  PieceSymbol,
+  { red: string; black: string }
+> = {
   k: { red: '帅', black: '将' },
   a: { red: '仕', black: '士' },
   b: { red: '相', black: '象' },

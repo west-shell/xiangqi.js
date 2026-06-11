@@ -41,7 +41,14 @@ import {
   XQ_SQUARES,
   EMPTY,
 } from './types'
-import { rank, file, algebraic, inPalace, crossedRiver, swapColor } from './board'
+import {
+  rank,
+  file,
+  algebraic,
+  inPalace,
+  crossedRiver,
+  swapColor,
+} from './board'
 
 /**
  * Check if a piece at `from` attacks the square `to`.

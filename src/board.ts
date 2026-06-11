@@ -83,7 +83,11 @@ export function playerCol(file: number, color: Color): number {
 }
 
 /** Forward steps (positive = advance, negative = retreat). */
-export function forwardSteps(fromRank: number, toRank: number, color: Color): number {
+export function forwardSteps(
+  fromRank: number,
+  toRank: number,
+  color: Color,
+): number {
   const direction = color === WHITE ? 1 : -1
   return (toRank - fromRank) * direction
 }

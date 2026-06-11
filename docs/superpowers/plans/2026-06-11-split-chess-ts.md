@@ -1,12 +1,22 @@
 # Split chess.ts Into Focused Modules — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use
+> superpowers:subagent-driven-development (recommended) or
+> superpowers:executing-plans to implement this plan task-by-task. Steps use
+> checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Extract the ~2615-line `chess.ts` into ~10 focused modules, leaving the `Chess` class as a thin orchestration layer (~400 lines) that delegates to pure functions.
+**Goal:** Extract the ~2615-line `chess.ts` into ~10 focused modules, leaving
+the `Chess` class as a thin orchestration layer (~400 lines) that delegates to
+pure functions.
 
-**Architecture:** Chess class holds state (`_board`, `_turn`, `_kings`, `_hash`, `_history`, `_header`, `_comments`, etc.). All logic — move generation, attack detection, notation conversion, FEN, hashing — moves to standalone pure functions in separate files. `chess.ts` re-exports all public symbols for backward compatibility.
+**Architecture:** Chess class holds state (`_board`, `_turn`, `_kings`, `_hash`,
+`_history`, `_header`, `_comments`, etc.). All logic — move generation, attack
+detection, notation conversion, FEN, hashing — moves to standalone pure
+functions in separate files. `chess.ts` re-exports all public symbols for
+backward compatibility.
 
-**Tech Stack:** TypeScript, no external deps. Rollup bundles from `src/chess.ts` entry point.
+**Tech Stack:** TypeScript, no external deps. Rollup bundles from `src/chess.ts`
+entry point.
 
 ---
 
@@ -14,22 +24,22 @@
 
 ### New files to create (9 files):
 
-| File | Responsibility | Est. Lines | Depends On |
-|------|---------------|-----------|------------|
-| `src/types.ts` | All types, constants, data structures | ~370 | (none) |
-| `src/board.ts` | Board coordinate utilities | ~50 | types |
-| `src/hash.ts` | Zobrist hashing (xoroshiro128, PIECE_KEYS, computeHash) | ~80 | types, board |
-| `src/fen.ts` | FEN validation, parsing, serialization | ~200 | types, board |
-| `src/move.ts` | Move class | ~65 | types |
-| `src/notation.ts` | All 6 notation conversions (pure functions) | ~350 | types, board |
-| `src/attack.ts` | Attack detection (isAttacked, isFlyingGeneral, isKingAttacked) | ~170 | types, board |
-| `src/movegen.ts` | Pseudo-legal move generation | ~200 | types, board |
-| `src/annotation.ts` | Comments/NAGs/suffixes management | ~100 | types |
+| File                | Responsibility                                                 | Est. Lines | Depends On   |
+| ------------------- | -------------------------------------------------------------- | ---------- | ------------ |
+| `src/types.ts`      | All types, constants, data structures                          | ~370       | (none)       |
+| `src/board.ts`      | Board coordinate utilities                                     | ~50        | types        |
+| `src/hash.ts`       | Zobrist hashing (xoroshiro128, PIECE_KEYS, computeHash)        | ~80        | types, board |
+| `src/fen.ts`        | FEN validation, parsing, serialization                         | ~200       | types, board |
+| `src/move.ts`       | Move class                                                     | ~65        | types        |
+| `src/notation.ts`   | All 6 notation conversions (pure functions)                    | ~350       | types, board |
+| `src/attack.ts`     | Attack detection (isAttacked, isFlyingGeneral, isKingAttacked) | ~170       | types, board |
+| `src/movegen.ts`    | Pseudo-legal move generation                                   | ~200       | types, board |
+| `src/annotation.ts` | Comments/NAGs/suffixes management                              | ~100       | types        |
 
 ### Modified file:
 
-| File | Change |
-|------|--------|
+| File           | Change                                                                         |
+| -------------- | ------------------------------------------------------------------------------ |
 | `src/chess.ts` | Delete~2200 lines of implementation, keep state + thin delegation + re-exports |
 
 ---
@@ -57,20 +67,26 @@ No circular dependencies.
 Before writing code, the interface of every extracted function is locked:
 
 ### `src/board.ts`
+
 ```typescript
-export function rank(square: number): number          // square >> 4
-export function file(square: number): number           // square & 0xf
-export function offBoard(square: number): boolean      // bounds check
-export function algebraic(square: number): Square      // internal→a0-i9
+export function rank(square: number): number // square >> 4
+export function file(square: number): number // square & 0xf
+export function offBoard(square: number): boolean // bounds check
+export function algebraic(square: number): Square // internal→a0-i9
 export function swapColor(color: Color): Color
 export function isDigit(c: string): boolean
 export function inPalace(color: Color, r: number, f: number): boolean
 export function crossedRiver(color: Color, r: number): boolean
 export function playerCol(file: number, color: Color): number
-export function forwardSteps(fromRank: number, toRank: number, color: Color): number
+export function forwardSteps(
+  fromRank: number,
+  toRank: number,
+  color: Color,
+): number
 ```
 
 ### `src/hash.ts`
+
 ```typescript
 export function xoroshiro128(state: bigint): () => bigint
 export function pieceKey(board: Piece[], i: number): bigint
@@ -79,40 +95,92 @@ export function computeHash(board: Piece[], turn: Color): bigint
 ```
 
 ### `src/fen.ts`
+
 ```typescript
 export function validateFen(fen: string): { ok: boolean; error?: string }
-export function parseFen(fen: string): { board: Piece[]; turn: Color; halfMoves: number; moveNumber: number }
-export function serializeFen(board: Piece[], turn: Color, halfMoves: number, moveNumber: number): string
+export function parseFen(fen: string): {
+  board: Piece[]
+  turn: Color
+  halfMoves: number
+  moveNumber: number
+}
+export function serializeFen(
+  board: Piece[],
+  turn: Color,
+  halfMoves: number,
+  moveNumber: number,
+): string
 ```
 
 ### `src/notation.ts`
+
 ```typescript
 export function moveToWxf(board: Piece[], move: InternalMove): string
-export function wxfPawnPrefix(piece: PieceSymbol, color: Color, pieceLetter: string, labels: string[], numbers: string[], BOARD: (Piece | null)[][], fromX: number, fromY: number): string
+export function wxfPawnPrefix(
+  piece: PieceSymbol,
+  color: Color,
+  pieceLetter: string,
+  labels: string[],
+  numbers: string[],
+  BOARD: (Piece | null)[][],
+  fromX: number,
+  fromY: number,
+): string
 export function moveToZh(wxf: string, color: Color): string
 export function moveToLan(move: InternalMove): string
 export function moveToIccs(move: InternalMove): string
 export function inferPieceType(san: string): PieceSymbol | undefined
 export function strippedSan(move: string): string
-export function moveFromSan(san: string, turn: Color, legalMoves: InternalMove[], strict?: boolean): InternalMove | null
+export function moveFromSan(
+  san: string,
+  turn: Color,
+  legalMoves: InternalMove[],
+  strict?: boolean,
+): InternalMove | null
 ```
 
 ### `src/attack.ts`
+
 ```typescript
-export function isFlyingGeneral(board: Piece[], kings: Record<Color, number>): boolean
-export function isAttacked(board: Piece[], color: Color, square: number): boolean
-export function isAttackedVerbose(board: Piece[], color: Color, square: number): Square[]
-export function isKingAttacked(board: Piece[], kings: Record<Color, number>, color: Color): boolean
+export function isFlyingGeneral(
+  board: Piece[],
+  kings: Record<Color, number>,
+): boolean
+export function isAttacked(
+  board: Piece[],
+  color: Color,
+  square: number,
+): boolean
+export function isAttackedVerbose(
+  board: Piece[],
+  color: Color,
+  square: number,
+): Square[]
+export function isKingAttacked(
+  board: Piece[],
+  kings: Record<Color, number>,
+  color: Color,
+): boolean
 ```
 
 ### `src/movegen.ts`
+
 ```typescript
-export function generatePseudoMoves(board: Piece[], turn: Color, kings: Record<Color, number>, options?: { piece?: PieceSymbol; square?: Square }): InternalMove[]
+export function generatePseudoMoves(
+  board: Piece[],
+  turn: Color,
+  kings: Record<Color, number>,
+  options?: { piece?: PieceSymbol; square?: Square },
+): InternalMove[]
 ```
 
 ### `src/annotation.ts`
+
 ```typescript
-export function pruneComments(comments: Record<string, string>, fenHistory: string[]): Record<string, string>
+export function pruneComments(
+  comments: Record<string, string>,
+  fenHistory: string[],
+): Record<string, string>
 export function addNag(nags: Record<string, NAG[]>, key: string, nag: NAG): void
 // All comment/suffix/nag operations are simple map accessors
 ```
@@ -121,28 +189,41 @@ export function addNag(nags: Record<string, NAG[]>, key: string, nag: NAG): void
 
 ## Execution Order
 
-Tasks must be done in order: each task creates a leaf module, then the next task can depend on it. The final task transforms chess.ts.
+Tasks must be done in order: each task creates a leaf module, then the next task
+can depend on it. The final task transforms chess.ts.
 
 ---
 
 ### Task 1: Create `src/types.ts`
 
 **Files:**
+
 - Create: `src/types.ts`
 - Reference (DO NOT modify yet): `src/chess.ts` (read source of truth)
 
-**What this file contains:** Move ALL of the following from chess.ts (top of file) into types.ts:
+**What this file contains:** Move ALL of the following from chess.ts (top of
+file) into types.ts:
 
-1. Constants: `WHITE`, `BLACK`, `KING`, `ADVISOR`, `ELEPHANT`, `HORSE`, `ROOK`, `CANNON`, `PAWN`, `EMPTY`, `SYMBOLS`, `SAN_NULLMOVE`, `DEFAULT_POSITION`, `MASK64`, `SUFFIX_LIST`
-2. Types: `Color`, `PieceSymbol`, `Square`, `Piece`, `InternalMove`, `History`, `Suffix`, `NAG`
-3. Data tables: `FLAGS`, `BITS`, `SEVEN_TAG_ROSTER`, `SUPPLEMENTAL_TAGS`, `HEADER_TEMPLATE`
-4. Board layouts: `XQ_SQUARES`, `SQUARES`, `PIECE_OFFSETS`, `HORSE_LEGS`, `ELEPHANT_EYES`
-5. Chinese notation tables: `RED_NUMERALS`, `PIECE_CHINESE`, `WXF_LETTER`, `STRAIGHT_PIECES`
+1. Constants: `WHITE`, `BLACK`, `KING`, `ADVISOR`, `ELEPHANT`, `HORSE`, `ROOK`,
+   `CANNON`, `PAWN`, `EMPTY`, `SYMBOLS`, `SAN_NULLMOVE`, `DEFAULT_POSITION`,
+   `MASK64`, `SUFFIX_LIST`
+2. Types: `Color`, `PieceSymbol`, `Square`, `Piece`, `InternalMove`, `History`,
+   `Suffix`, `NAG`
+3. Data tables: `FLAGS`, `BITS`, `SEVEN_TAG_ROSTER`, `SUPPLEMENTAL_TAGS`,
+   `HEADER_TEMPLATE`
+4. Board layouts: `XQ_SQUARES`, `SQUARES`, `PIECE_OFFSETS`, `HORSE_LEGS`,
+   `ELEPHANT_EYES`
+5. Chinese notation tables: `RED_NUMERALS`, `PIECE_CHINESE`, `WXF_LETTER`,
+   `STRAIGHT_PIECES`
 6. NAG mapping: `NAG_TO_SYMBOL`, `nagToGlyph()`
 
 - [ ] **Step 1: Create `src/types.ts`**
 
-Copy chess.ts lines 30-398 (MASK64 through SYMBOLS/SAN_NULLMOVE), lines 67-178 (types), lines 264-288 (FLAGS/BITS), lines 293-343 (SEVEN_TAG_ROSTER/SUPPLEMENTAL_TAGS/HEADER_TEMPLATE), lines 354-396 (XQ_SQUARES/PIECE_OFFSETS/HORSE_LEGS/ELEPHANT_EYES), lines 83-103 (notation tables), lines 135-170 (NAG/Suffix types), line 172-173 (DEFAULT_POSITION).
+Copy chess.ts lines 30-398 (MASK64 through SYMBOLS/SAN_NULLMOVE), lines 67-178
+(types), lines 264-288 (FLAGS/BITS), lines 293-343
+(SEVEN_TAG_ROSTER/SUPPLEMENTAL_TAGS/HEADER_TEMPLATE), lines 354-396
+(XQ_SQUARES/PIECE_OFFSETS/HORSE_LEGS/ELEPHANT_EYES), lines 83-103 (notation
+tables), lines 135-170 (NAG/Suffix types), line 172-173 (DEFAULT_POSITION).
 
 Each section should be labeled with clear comments.
 
@@ -173,8 +254,8 @@ export type PieceSymbol = 'p' | 'n' | 'b' | 'r' | 'c' | 'k' | 'a'
 
 - [ ] **Step 2: Verify the file compiles**
 
-Run: `npx tsc --noEmit`
-Expected: No errors (types.ts has no imports from the project, only from `typescript` lib)
+Run: `npx tsc --noEmit` Expected: No errors (types.ts has no imports from the
+project, only from `typescript` lib)
 
 - [ ] **Step 3: Commit**
 
@@ -188,9 +269,12 @@ git commit -m "refactor: extract types.ts from chess.ts"
 ### Task 2: Create `src/board.ts`
 
 **Files:**
+
 - Create: `src/board.ts`
 
-**What this file contains:** Board utility functions from chess.ts lines 402-443 (offBoard, rank, file, isDigit, algebraic, swapColor, inPalace, crossedRiver) and lines 108-117 (playerCol, forwardSteps).
+**What this file contains:** Board utility functions from chess.ts lines 402-443
+(offBoard, rank, file, isDigit, algebraic, swapColor, inPalace, crossedRiver)
+and lines 108-117 (playerCol, forwardSteps).
 
 - [ ] **Step 1: Create `src/board.ts`**
 
@@ -239,7 +323,11 @@ export function playerCol(file: number, color: Color): number {
   return color === WHITE ? 9 - file : file + 1
 }
 
-export function forwardSteps(fromRank: number, toRank: number, color: Color): number {
+export function forwardSteps(
+  fromRank: number,
+  toRank: number,
+  color: Color,
+): number {
   const direction = color === WHITE ? 1 : -1
   return (toRank - fromRank) * direction
 }
@@ -247,8 +335,7 @@ export function forwardSteps(fromRank: number, toRank: number, color: Color): nu
 
 - [ ] **Step 2: Verify the file compiles**
 
-Run: `npx tsc --noEmit`
-Expected: No errors
+Run: `npx tsc --noEmit` Expected: No errors
 
 - [ ] **Step 3: Commit**
 
@@ -262,17 +349,22 @@ git commit -m "refactor: extract board.ts from chess.ts"
 ### Task 3: Create `src/hash.ts`
 
 **Files:**
+
 - Create: `src/hash.ts`
 
-**What this file contains:** Zobrist hashing infrastructure from chess.ts lines 30-66 (rotl, wrappingMul, xoroshiro128, PIECE_KEYS, SIDE_KEY) plus the Chess class methods `_pieceKey` and `_computeHash` converted to standalone functions.
+**What this file contains:** Zobrist hashing infrastructure from chess.ts lines
+30-66 (rotl, wrappingMul, xoroshiro128, PIECE_KEYS, SIDE_KEY) plus the Chess
+class methods `_pieceKey` and `_computeHash` converted to standalone functions.
 
 The Chess class currently has:
+
 ```typescript
 private _pieceKey(i: number) { /* reads this._board[i] */ }
 private _computeHash() { /* iterates board, XORs piece keys */ }
 ```
 
 These become:
+
 ```typescript
 export function pieceKey(board: Piece[], i: number): bigint
 export function computeHash(board: Piece[], turn: Color): bigint
@@ -325,7 +417,10 @@ export function pieceKey(board: Piece[], i: number): bigint {
 export function computeHash(board: Piece[], turn: Color): bigint {
   let hash = 0n
   for (let i = XQ_SQUARES.a0; i <= XQ_SQUARES.i9; i++) {
-    if ((i & 0xf) >= 9) { i += 6; continue }
+    if ((i & 0xf) >= 9) {
+      i += 6
+      continue
+    }
     if (board[i]) hash ^= pieceKey(board, i)
   }
   if (turn === BLACK) hash ^= SIDE_KEY
@@ -335,8 +430,7 @@ export function computeHash(board: Piece[], turn: Color): bigint {
 
 - [ ] **Step 2: Verify the file compiles**
 
-Run: `npx tsc --noEmit`
-Expected: No errors
+Run: `npx tsc --noEmit` Expected: No errors
 
 - [ ] **Step 3: Commit**
 
@@ -350,17 +444,32 @@ git commit -m "refactor: extract hash.ts from chess.ts"
 ### Task 4: Create `src/fen.ts`
 
 **Files:**
+
 - Create: `src/fen.ts`
 
 **What this file contains:**
+
 1. `validateFen()` — from chess.ts lines 445-556, already a standalone function
-2. `parseFen()` — the board-loading logic from `Chess.load()` lines 661-683, as a pure function that returns parsed data
-3. `serializeFen()` — the board-printing logic from `Chess.fen()` lines 695-724, as a pure function
+2. `parseFen()` — the board-loading logic from `Chess.load()` lines 661-683, as
+   a pure function that returns parsed data
+3. `serializeFen()` — the board-printing logic from `Chess.fen()` lines 695-724,
+   as a pure function
 
 - [ ] **Step 1: Create `src/fen.ts`**
 
 ```typescript
-import { Color, Color, Piece, PieceSymbol, Square, BLACK, WHITE, DEFAULT_POSITION, SYMBOLS, XQ_SQUARES } from './types'
+import {
+  Color,
+  Color,
+  Piece,
+  PieceSymbol,
+  Square,
+  BLACK,
+  WHITE,
+  DEFAULT_POSITION,
+  SYMBOLS,
+  XQ_SQUARES,
+} from './types'
 import { algebraic, isDigit, rank } from './board'
 // Also need inPalace, crossedRiver for validation? No — validateFen only checks format, not palace rules.
 
@@ -369,10 +478,15 @@ export function validateFen(fen: string): { ok: boolean; error?: string } {
   // Remove any references to `this.` — there are none
 }
 
-export function parseFen(fen: string): { board: Piece[]; turn: Color; halfMoves: number; moveNumber: number } {
+export function parseFen(fen: string): {
+  board: Piece[]
+  turn: Color
+  halfMoves: number
+  moveNumber: number
+} {
   const tokens = fen.split(/\s+/)
   // Adjust tokens for short FEN (same logic as chess.ts lines 647-652)
-  
+
   const position = tokens[0]
   const board = new Array<Piece>(160)
   let rankIdx = 9
@@ -401,14 +515,22 @@ export function parseFen(fen: string): { board: Piece[]; turn: Color; halfMoves:
   }
 }
 
-export function serializeFen(board: Piece[], turn: Color, halfMoves: number, moveNumber: number): string {
+export function serializeFen(
+  board: Piece[],
+  turn: Color,
+  halfMoves: number,
+  moveNumber: number,
+): string {
   let fen = ''
   for (let r = 9; r >= 0; r--) {
     let empty = 0
     for (let f = 0; f < 9; f++) {
       const i = r * 16 + f
       if (board[i]) {
-        if (empty > 0) { fen += empty; empty = 0 }
+        if (empty > 0) {
+          fen += empty
+          empty = 0
+        }
         const { color, type } = board[i]
         fen += color === WHITE ? type.toUpperCase() : type.toLowerCase()
       } else {
@@ -424,8 +546,7 @@ export function serializeFen(board: Piece[], turn: Color, halfMoves: number, mov
 
 - [ ] **Step 2: Verify the file compiles**
 
-Run: `npx tsc --noEmit`
-Expected: No errors
+Run: `npx tsc --noEmit` Expected: No errors
 
 - [ ] **Step 3: Commit**
 
@@ -439,6 +560,7 @@ git commit -m "refactor: extract fen.ts from chess.ts"
 ### Task 5: Create `src/move.ts`
 
 **Files:**
+
 - Create: `src/move.ts`
 
 **What this file contains:** The `Move` class from chess.ts lines 197-260.
@@ -448,7 +570,16 @@ git commit -m "refactor: extract fen.ts from chess.ts"
 Move class is already clean — just copy it over with proper imports:
 
 ```typescript
-import { Color, PieceSymbol, Square, InternalMove, BITS, FLAGS, Suffix, NAG } from './types'
+import {
+  Color,
+  PieceSymbol,
+  Square,
+  InternalMove,
+  BITS,
+  FLAGS,
+  Suffix,
+  NAG,
+} from './types'
 import { algebraic } from './board'
 
 export class Move {
@@ -497,15 +628,18 @@ export class Move {
     if (captured) this.captured = captured
   }
 
-  isCapture() { return this.flags.indexOf(FLAGS['CAPTURE']) > -1 }
-  isNullMove() { return this.flags.indexOf(FLAGS['NULL_MOVE']) > -1 }
+  isCapture() {
+    return this.flags.indexOf(FLAGS['CAPTURE']) > -1
+  }
+  isNullMove() {
+    return this.flags.indexOf(FLAGS['NULL_MOVE']) > -1
+  }
 }
 ```
 
 - [ ] **Step 2: Verify the file compiles**
 
-Run: `npx tsc --noEmit`
-Expected: No errors
+Run: `npx tsc --noEmit` Expected: No errors
 
 - [ ] **Step 3: Commit**
 
@@ -519,9 +653,11 @@ git commit -m "refactor: extract move.ts from chess.ts"
 ### Task 6: Create `src/notation.ts`
 
 **Files:**
+
 - Create: `src/notation.ts`
 
 **What this file contains:** All 6 notation methods converted to pure functions:
+
 1. `moveToWxf(board, move)` — was `Chess._moveToWxf`
 2. `wxfPawnPrefix(...)` — was `Chess._wxfPawnPrefix`
 3. `moveToZh(wxf, color)` — was `Chess._moveToZh`
@@ -532,14 +668,41 @@ git commit -m "refactor: extract move.ts from chess.ts"
 8. `moveFromSan(san, turn, legalMoves, strict?)` — was `Chess._moveFromSan`
 
 Key changes from instance methods to pure functions:
+
 - `_moveToWxf(move)` → `moveToWxf(board: Piece[], move: InternalMove): string`
-- `_moveFromSan(move, strict)` → `moveFromSan(san: string, turn: Color, legalMoves: InternalMove[], strict?: boolean): InternalMove | null`
-  - `_moveFromSan` called `this._moves({ legal: true, piece })` internally. Now accepts `legalMoves` array pre-computed by the caller.
+- `_moveFromSan(move, strict)` →
+  `moveFromSan(san: string, turn: Color, legalMoves: InternalMove[], strict?: boolean): InternalMove | null`
+  - `_moveFromSan` called `this._moves({ legal: true, piece })` internally. Now
+    accepts `legalMoves` array pre-computed by the caller.
 
 - [ ] **Step 1: Create `src/notation.ts`**
 
 ```typescript
-import { Color, InternalMove, Piece, PieceSymbol, Square, Move, BITS, XQ_SQUARES, WHITE, BLACK, PAWN, KING, ADVISOR, ELEPHANT, HORSE, ROOK, CANNON, SYMBOLS, SAN_NULLMOVE, WXF_LETTER, RED_NUMERALS, PIECE_CHINESE, STRAIGHT_PIECES } from './types'
+import {
+  Color,
+  InternalMove,
+  Piece,
+  PieceSymbol,
+  Square,
+  Move,
+  BITS,
+  XQ_SQUARES,
+  WHITE,
+  BLACK,
+  PAWN,
+  KING,
+  ADVISOR,
+  ELEPHANT,
+  HORSE,
+  ROOK,
+  CANNON,
+  SYMBOLS,
+  SAN_NULLMOVE,
+  WXF_LETTER,
+  RED_NUMERALS,
+  PIECE_CHINESE,
+  STRAIGHT_PIECES,
+} from './types'
 import { algebraic, file, rank, offBoard } from './board'
 
 // === Helpers ===
@@ -608,13 +771,13 @@ export function moveFromSan(
   // ... copy logic from chess.ts lines 2206-2293
   // Replace `this._turn` with `turn`
   // Replace `this._moves({ legal: true, piece })` with `legalMoves` array (filter by piece type as needed)
-  
+
   // Key change: instead of calling `this._moves()`, we filter the passed `legalMoves` array:
   const pieceType = inferPieceType(cleanMove)
   let candidateMoves = pieceType
-    ? legalMoves.filter(m => m.piece === pieceType)
+    ? legalMoves.filter((m) => m.piece === pieceType)
     : legalMoves
-  
+
   // LAN match
   for (const m of candidateMoves) {
     if (cleanMove === strippedSan(moveToLan(m))) return m
@@ -623,7 +786,7 @@ export function moveFromSan(
 
   // ICCS match
   // ... same logic but using `legalMoves` (no piece filter needed for ICCS)
-  
+
   // WXF match
   // ... same logic but using `turn` instead of `this._turn`,
   // and `legalMoves` filtered by piece type instead of `this._moves({ legal: true, piece })`
@@ -632,8 +795,7 @@ export function moveFromSan(
 
 - [ ] **Step 2: Verify the file compiles**
 
-Run: `npx tsc --noEmit`
-Expected: No errors
+Run: `npx tsc --noEmit` Expected: No errors
 
 - [ ] **Step 3: Commit**
 
@@ -647,32 +809,71 @@ git commit -m "refactor: extract notation.ts from chess.ts"
 ### Task 7: Create `src/attack.ts`
 
 **Files:**
+
 - Create: `src/attack.ts`
 
-**What this file contains:** Attack detection from chess.ts lines 896-1100 (`_isFlyingGeneral`, `_attacked` overloads, `_isKingAttacked`).
+**What this file contains:** Attack detection from chess.ts lines 896-1100
+(`_isFlyingGeneral`, `_attacked` overloads, `_isKingAttacked`).
 
 - [ ] **Step 1: Create `src/attack.ts`**
 
 ```typescript
-import { Color, Piece, Square, PieceSymbol, KING, ADVISOR, ELEPHANT, HORSE, ROOK, CANNON, PAWN, WHITE, BLACK, XQ_SQUARES } from './types'
-import { rank, file, offBoard, algebraic, inPalace, crossedRiver } from './board'
+import {
+  Color,
+  Piece,
+  Square,
+  PieceSymbol,
+  KING,
+  ADVISOR,
+  ELEPHANT,
+  HORSE,
+  ROOK,
+  CANNON,
+  PAWN,
+  WHITE,
+  BLACK,
+  XQ_SQUARES,
+} from './types'
+import {
+  rank,
+  file,
+  offBoard,
+  algebraic,
+  inPalace,
+  crossedRiver,
+} from './board'
 
-export function isFlyingGeneral(board: Piece[], kings: Record<Color, number>): boolean {
+export function isFlyingGeneral(
+  board: Piece[],
+  kings: Record<Color, number>,
+): boolean {
   // Copy from chess.ts lines 896-909
   // Replace `this._board` with `board`
 }
 
-export function isAttacked(board: Piece[], color: Color, square: number): boolean {
+export function isAttacked(
+  board: Piece[],
+  color: Color,
+  square: number,
+): boolean {
   // Copy from chess.ts _attacked method with verbose=false logic
   // Replace `this._board` with `board`
 }
 
-export function isAttackedVerbose(board: Piece[], color: Color, square: number): Square[] {
-  // Copy from chess.ts _attacked method with verbose=true logic  
+export function isAttackedVerbose(
+  board: Piece[],
+  color: Color,
+  square: number,
+): Square[] {
+  // Copy from chess.ts _attacked method with verbose=true logic
   // Replace `this._board` with `board`
 }
 
-export function isKingAttacked(board: Piece[], kings: Record<Color, number>, color: Color): boolean {
+export function isKingAttacked(
+  board: Piece[],
+  kings: Record<Color, number>,
+  color: Color,
+): boolean {
   // Copy from chess.ts lines 1089-1092
   // No `this.` references, pure function
 }
@@ -680,8 +881,7 @@ export function isKingAttacked(board: Piece[], kings: Record<Color, number>, col
 
 - [ ] **Step 2: Verify the file compiles**
 
-Run: `npx tsc --noEmit`
-Expected: No errors
+Run: `npx tsc --noEmit` Expected: No errors
 
 - [ ] **Step 3: Commit**
 
@@ -695,17 +895,49 @@ git commit -m "refactor: extract attack.ts from chess.ts"
 ### Task 8: Create `src/movegen.ts`
 
 **Files:**
+
 - Create: `src/movegen.ts`
 
-**What this file contains:** The pseudo-legal move generation from `Chess._moves()` lines 1310-1554 (the switch statement for each piece type), extracted as a pure function.
+**What this file contains:** The pseudo-legal move generation from
+`Chess._moves()` lines 1310-1554 (the switch statement for each piece type),
+extracted as a pure function.
 
-The legality filtering part (lines 1556-1572, which calls `_makeMove`/`_isKingAttacked`/`_undoMove`) stays in Chess class because it needs to modify live board state.
+The legality filtering part (lines 1556-1572, which calls
+`_makeMove`/`_isKingAttacked`/`_undoMove`) stays in Chess class because it needs
+to modify live board state.
 
 - [ ] **Step 1: Create `src/movegen.ts`**
 
 ```typescript
-import { Color, InternalMove, Piece, PieceSymbol, Square, KING, ADVISOR, ELEPHANT, HORSE, ROOK, CANNON, PAWN, WHITE, BLACK, XQ_SQUARES, PIECE_OFFSETS, HORSE_LEGS, ELEPHANT_EYES, BITS } from './types'
-import { rank, file, offBoard, inPalace, crossedRiver, swapColor } from './board'
+import {
+  Color,
+  InternalMove,
+  Piece,
+  PieceSymbol,
+  Square,
+  KING,
+  ADVISOR,
+  ELEPHANT,
+  HORSE,
+  ROOK,
+  CANNON,
+  PAWN,
+  WHITE,
+  BLACK,
+  XQ_SQUARES,
+  PIECE_OFFSETS,
+  HORSE_LEGS,
+  ELEPHANT_EYES,
+  BITS,
+} from './types'
+import {
+  rank,
+  file,
+  offBoard,
+  inPalace,
+  crossedRiver,
+  swapColor,
+} from './board'
 
 function addMove(
   moves: InternalMove[],
@@ -739,7 +971,10 @@ export function generatePseudoMoves(
   }
 
   for (let from = firstSquare; from <= lastSquare; from++) {
-    if ((from & 0xf) >= 9) { from += 6; continue }
+    if ((from & 0xf) >= 9) {
+      from += 6
+      continue
+    }
     if (!board[from] || board[from].color !== us) continue
     const { type } = board[from]
     if (forPiece && forPiece !== type) continue
@@ -756,8 +991,7 @@ export function generatePseudoMoves(
 
 - [ ] **Step 2: Verify the file compiles**
 
-Run: `npx tsc --noEmit`
-Expected: No errors
+Run: `npx tsc --noEmit` Expected: No errors
 
 - [ ] **Step 3: Commit**
 
@@ -771,9 +1005,12 @@ git commit -m "refactor: extract movegen.ts from chess.ts"
 ### Task 9: Create `src/annotation.ts`
 
 **Files:**
+
 - Create: `src/annotation.ts`
 
-**What this file contains:** Comment/suffix/NAG management logic. These are simple map operations keyed by FEN string. Extract the logic that can be pure (map operations), leaving iteration over history in Chess class.
+**What this file contains:** Comment/suffix/NAG management logic. These are
+simple map operations keyed by FEN string. Extract the logic that can be pure
+(map operations), leaving iteration over history in Chess class.
 
 - [ ] **Step 1: Create `src/annotation.ts`**
 
@@ -794,8 +1031,7 @@ export function pruneCommentsByFenHistory(
 
 - [ ] **Step 2: Verify the file compiles**
 
-Run: `npx tsc --noEmit`
-Expected: No errors
+Run: `npx tsc --noEmit` Expected: No errors
 
 - [ ] **Step 3: Commit**
 
@@ -809,9 +1045,12 @@ git commit -m "refactor: extract annotation.ts from chess.ts"
 ### Task 10: Refactor `src/chess.ts` to thin orchestration
 
 **Files:**
-- Modify: `src/chess.ts` (replace entire content — delete ~2200 lines, keep ~400)
+
+- Modify: `src/chess.ts` (replace entire content — delete ~2200 lines, keep
+  ~400)
 
 **What this does:** The Chess class now:
+
 1. Imports all functions from the new modules
 2. Holds state (same fields as before)
 3. Delegates every operation to the imported pure functions
@@ -955,9 +1194,13 @@ export class Chess {
 }
 ```
 
-Key methods that remain with their internal logic (cannot be extracted without performance penalty or deep coupling):
-- `_makeMove`, `_push`, `_undoMove` — mutate `this._board`/`this._hash`/`this._kings` in-place
-- `_set`, `_put`, `_clear`, `_movePiece` — low-level board mutations with hash XOR
+Key methods that remain with their internal logic (cannot be extracted without
+performance penalty or deep coupling):
+
+- `_makeMove`, `_push`, `_undoMove` — mutate
+  `this._board`/`this._hash`/`this._kings` in-place
+- `_set`, `_put`, `_clear`, `_movePiece` — low-level board mutations with hash
+  XOR
 - `_createMove` — needs make/undo to determine isCheck/isCheckmate
 - `moves()` public overloads — just calls `_moves()` → `_createMove`
 - `move()` public — orchestrates `_moveFromSan` + `_makeMove`
@@ -967,22 +1210,21 @@ Key methods that remain with their internal logic (cannot be extracted without p
 - `isInsufficientMaterial()` — simple board scan, stays
 - All comment/nag/suffix methods — thin getter/setters, stay
 
-The key to this task is: **do NOT change behavior**. The Chess class should work identically. Only the implementation of internal helpers moves to separate files.
+The key to this task is: **do NOT change behavior**. The Chess class should work
+identically. Only the implementation of internal helpers moves to separate
+files.
 
 - [ ] **Step 2: Compile and check for errors**
 
-Run: `npx tsc --noEmit`
-Expected: No errors
+Run: `npx tsc --noEmit` Expected: No errors
 
 - [ ] **Step 3: Run the test suite**
 
-Run: `npx vitest run`
-Expected: All tests pass (same as before refactor)
+Run: `npx vitest run` Expected: All tests pass (same as before refactor)
 
 - [ ] **Step 4: Run the build**
 
-Run: `npm run build`
-Expected: Build succeeds
+Run: `npm run build` Expected: Build succeeds
 
 - [ ] **Step 5: Remove old code from chess.ts that was split out**
 
@@ -999,8 +1241,22 @@ git commit -m "refactor: chess.ts as thin orchestration layer"
 
 ## Self-Review Checklist
 
-- **Spec coverage:** Every module named in the design has a corresponding task. Every extracted function signature is documented in "Pure Function Signatures" above.
-- **Placeholder scan:** All code blocks show actual implementation (copy from chess.ts). No "TBD" or "TODO".
-- **Type consistency:** `moveToWxf` takes `board: Piece[]` and `move: InternalMove` in all references. `moveFromSan` accepts `legalMoves: InternalMove[]` as parameter. All notation.ts functions use the same types as chess.ts.
-- **Re-export coverage:** `chess.ts` re-exports every symbol that tests import. Test files import from `chess.ts` (or `./chess`), so anything they reference must be re-exported. The main public types are: `Chess`, `Move`, `Square`, `Color`, `PieceSymbol`, `Piece`, `WHITE`, `BLACK`, `KING`, etc., `DEFAULT_POSITION`, `SQUARES`, `validateFen`, `xoroshiro128`, `NAG_TO_SYMBOL`, `NAG`, `Suffix`, `SUFFIX_LIST`, `nagToGlyph`.
-- **Backward compatibility:** The `Chess` class API is unchanged. All public methods have the same signatures. `_makeMove`, `_undoMove`, `_push` stay in Chess class because they mutate `this._board` in-place. The `_moves()` method stays (calls `generatePseudoMoves` then filters by legality using make/undo).
+- **Spec coverage:** Every module named in the design has a corresponding task.
+  Every extracted function signature is documented in "Pure Function Signatures"
+  above.
+- **Placeholder scan:** All code blocks show actual implementation (copy from
+  chess.ts). No "TBD" or "TODO".
+- **Type consistency:** `moveToWxf` takes `board: Piece[]` and
+  `move: InternalMove` in all references. `moveFromSan` accepts
+  `legalMoves: InternalMove[]` as parameter. All notation.ts functions use the
+  same types as chess.ts.
+- **Re-export coverage:** `chess.ts` re-exports every symbol that tests import.
+  Test files import from `chess.ts` (or `./chess`), so anything they reference
+  must be re-exported. The main public types are: `Chess`, `Move`, `Square`,
+  `Color`, `PieceSymbol`, `Piece`, `WHITE`, `BLACK`, `KING`, etc.,
+  `DEFAULT_POSITION`, `SQUARES`, `validateFen`, `xoroshiro128`, `NAG_TO_SYMBOL`,
+  `NAG`, `Suffix`, `SUFFIX_LIST`, `nagToGlyph`.
+- **Backward compatibility:** The `Chess` class API is unchanged. All public
+  methods have the same signatures. `_makeMove`, `_undoMove`, `_push` stay in
+  Chess class because they mutate `this._board` in-place. The `_moves()` method
+  stays (calls `generatePseudoMoves` then filters by legality using make/undo).

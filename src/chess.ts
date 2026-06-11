@@ -149,10 +149,7 @@ export class Chess {
     this._header['FEN'] = null
   }
 
-  load(
-    fen: string,
-    { skipValidation = false, preserveHeaders = false } = {},
-  ) {
+  load(fen: string, { skipValidation = false, preserveHeaders = false } = {}) {
     let tokens = fen.split(/\s+/)
 
     // append commonly omitted fen tokens
@@ -938,12 +935,7 @@ export class Chess {
       if (node.move) {
         const suffixAnnotation = node.suffixAnnotation
 
-        const move = moveFromSan(
-          node.move,
-          this._turn,
-          this._moves(),
-          strict,
-        )
+        const move = moveFromSan(node.move, this._turn, this._moves(), strict)
         if (!move) {
           throw new Error(`Invalid move in PGN: ${node.move}`)
         } else {

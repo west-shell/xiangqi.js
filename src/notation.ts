@@ -118,7 +118,16 @@ export function moveToWxf(board: Piece[], move: InternalMove): string {
   if (piece === 'a' || piece === 'b') {
     prefix = pieceLetter + numbers[fromX]
   } else if (piece === 'p') {
-    prefix = wxfPawnPrefix(piece, color, pieceLetter, labels, numbers, BOARD, fromX, fromY)
+    prefix = wxfPawnPrefix(
+      piece,
+      color,
+      pieceLetter,
+      labels,
+      numbers,
+      BOARD,
+      fromX,
+      fromY,
+    )
   } else {
     const sameCol: number[] = []
     for (let y = 0; y < 10; y++) {
@@ -213,7 +222,7 @@ export function wxfPawnPrefix(
       allPawns.push({ x, y })
     }
   }
-  const globalIdx = allPawns.findIndex(p => p.x === fromX && p.y === fromY)
+  const globalIdx = allPawns.findIndex((p) => p.x === fromX && p.y === fromY)
   return labels[globalIdx] + pieceLetter
 }
 
@@ -221,19 +230,23 @@ export function wxfPawnPrefix(
 export function moveToZh(wxf: string, color: Color): string {
   if (wxf === '--') return '--'
   const isRed = color === WHITE
-  const redNums = [
-    '一', '二', '三', '四', '五',
-    '六', '七', '八', '九',
-  ]
+  const redNums = ['一', '二', '三', '四', '五', '六', '七', '八', '九']
 
   const PIECE_REV: Record<string, string> = {
-    'K': '帅', 'k': '将',
-    'A': '仕', 'a': '士',
-    'B': '相', 'b': '象',
-    'N': '马', 'n': '马',
-    'R': '车', 'r': '车',
-    'C': '炮', 'c': '炮',
-    'P': '兵', 'p': '卒',
+    K: '帅',
+    k: '将',
+    A: '仕',
+    a: '士',
+    B: '相',
+    b: '象',
+    N: '马',
+    n: '马',
+    R: '车',
+    r: '车',
+    C: '炮',
+    c: '炮',
+    P: '兵',
+    p: '卒',
   }
 
   const re = /^([+\-.a-e])?([A-Za-z])(\d)?([+\-.])(\d)$/
@@ -264,7 +277,7 @@ export function moveToZh(wxf: string, color: Color): string {
   else if (action === '+') zhAction = '进'
   else zhAction = '退'
 
-  const toZhNum = (n: string) => isRed ? redNums[parseInt(n) - 1] : n
+  const toZhNum = (n: string) => (isRed ? redNums[parseInt(n) - 1] : n)
 
   let zh: string
   if (zhPrefix) {
@@ -318,7 +331,7 @@ export function moveFromSan(
   // Try strict match against all legal moves
   const pieceType = inferPieceType(cleanMove)
   const candidateMoves = pieceType
-    ? legalMoves.filter(m => m.piece === pieceType)
+    ? legalMoves.filter((m) => m.piece === pieceType)
     : legalMoves
 
   for (let i = 0; i < candidateMoves.length; i++) {
@@ -371,7 +384,7 @@ export function moveFromSan(
     }
 
     // Find the piece on this file that can make the move
-    const wxfMoves = legalMoves.filter(m => m.piece === piece)
+    const wxfMoves = legalMoves.filter((m) => m.piece === piece)
     for (let i = 0; i < wxfMoves.length; i++) {
       const m = wxfMoves[i]
       if (file(m.from) === fromFile) {

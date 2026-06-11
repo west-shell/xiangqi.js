@@ -141,9 +141,12 @@ export function validateFen(fen: string): { ok: boolean; error?: string } {
   return { ok: true }
 }
 
-export function parseFen(
-  fen: string,
-): { board: Piece[]; turn: Color; halfMoves: number; moveNumber: number } {
+export function parseFen(fen: string): {
+  board: Piece[]
+  turn: Color
+  halfMoves: number
+  moveNumber: number
+} {
   let tokens = fen.split(/\s+/)
 
   // append commonly omitted fen tokens
@@ -172,8 +175,9 @@ export function parseFen(
       const color = piece < 'a' ? WHITE : BLACK
       let type = piece.toLowerCase()
       // Normalize alternate piece letters accepted by validateFen
-      if (type === 'e') type = 'b'  // elephant alternate
-      else if (type === 'h') type = 'n'  // horse alternate
+      if (type === 'e')
+        type = 'b' // elephant alternate
+      else if (type === 'h') type = 'n' // horse alternate
       board[rank * 16 + file] = {
         type: type as PieceSymbol,
         color,
