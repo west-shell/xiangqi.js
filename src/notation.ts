@@ -147,7 +147,7 @@ export function moveToWxf(board: Piece[], move: InternalMove): string {
       } else if (sameCol.length === 3) {
         prefix = (idx === 0 ? '+' : idx === 1 ? '.' : '-') + pieceLetter
       } else {
-        prefix = labels[idx] + pieceLetter
+        prefix = pieceLetter + labels[idx]
       }
     }
   }
@@ -171,7 +171,7 @@ export function moveToWxf(board: Piece[], move: InternalMove): string {
   return prefix + action + target
 }
 
-/** WXF pawn prefix: {a-e}{piece} or {+-.}{piece} or {piece}{col} */
+/** WXF pawn prefix: {piece}[a-e] or {piece}[+-.] or {piece}{col} */
 export function wxfPawnPrefix(
   piece: PieceSymbol,
   color: Color,
@@ -212,7 +212,7 @@ export function wxfPawnPrefix(
     if (rows.length === 3) {
       return (idx === 0 ? '+' : idx === 1 ? '.' : '-') + pieceLetter
     }
-    return labels[idx] + pieceLetter
+    return pieceLetter + labels[idx]
   }
 
   const sortedCols = [...multiCols].sort((a, b) => a - b)
@@ -223,7 +223,7 @@ export function wxfPawnPrefix(
     }
   }
   const globalIdx = allPawns.findIndex((p) => p.x === fromX && p.y === fromY)
-  return labels[globalIdx] + pieceLetter
+  return pieceLetter + labels[globalIdx]
 }
 
 /** WXF -> Chinese notation (text substitution) */
@@ -249,15 +249,16 @@ export function moveToZh(wxf: string, color: Color): string {
     p: '卒',
   }
 
-  const re = /^([+\-.a-e])?([A-Za-z])(\d)?([+\-.])(\d)$/
+  const re = /^([+\-.a-e])?([A-Za-z])([a-e])?(\d)?([+\-.])(\d)$/
   const m = wxf.match(re)
   if (!m) return wxf
 
   const prefix = m[1] || ''
   const pieceKey = m[2]
-  const col = m[3] || ''
-  const action = m[4]
-  const target = m[5]
+  const label = m[3] || ''
+  const col = m[4] || ''
+  const action = m[5]
+  const target = m[6]
 
   const pieceChar = PIECE_REV[pieceKey]
   if (!pieceChar) return wxf
@@ -271,6 +272,11 @@ export function moveToZh(wxf: string, color: Color): string {
   else if (prefix === 'c') zhPrefix = '三'
   else if (prefix === 'd') zhPrefix = '四'
   else if (prefix === 'e') zhPrefix = '五'
+
+  // Label after piece (format: Pa.3)
+  if (!zhPrefix && label) {
+    zhPrefix = ({ 'a': '一', 'b': '二', 'c': '三', 'd': '四', 'e': '五' })[label] ?? ''
+  }
 
   let zhAction: string
   if (action === '.') zhAction = '平'
@@ -307,6 +313,59 @@ export function moveToIccs(move: InternalMove): string {
   return fromSq.toUpperCase() + '-' + toSq.toUpperCase()
 }
 
+// === Chinese WXF -> letter WXF ===
+
+/** Convert Chinese WXF (e.g. '炮二平五', '前车平五', '一兵平1') to letter WXF (e.g. 'C2.5', 'R+.5', 'Pa.1') */
+export function zhToWxf(zh: string): string {
+  const PIECE_MAP: Record<string, string> = {
+    '帅': 'K', '将': 'K',
+    '仕': 'A', '士': 'A',
+    '相': 'B', '象': 'B',
+    '马': 'N', '馬': 'N', '傌': 'N',
+    '车': 'R', '車': 'R', '俥': 'R',
+    '炮': 'C', '砲': 'C',
+    '兵': 'P', '卒': 'P',
+  }
+
+  const NUM_MAP: Record<string, string> = {
+    '一': '1', '二': '2', '三': '3', '四': '4', '五': '5',
+    '六': '6', '七': '7', '八': '8', '九': '9',
+  }
+
+  const ACTION_MAP: Record<string, string> = {
+    '进': '+', '退': '-', '平': '.',
+  }
+
+  const PREFIX_MAP: Record<string, string> = {
+    '前': '+', '中': '.', '后': '-',
+  }
+
+  const PIECE_CLS = '[车俥車马傌馬炮砲士仕象相帅將帅将兵卒]'
+  const NUM_CLS = '[一二三四五六七八九1-9]'
+  const ACT_CLS = '[进退平]'
+
+  // Pattern A: 前车平五 / 后炮进三 → R+.5 / C-.3
+  let m = zh.match(new RegExp(`^([前后中])(${PIECE_CLS})(${ACT_CLS})(${NUM_CLS})$`))
+  if (m) {
+    return PIECE_MAP[m[2]] + PREFIX_MAP[m[1]] + ACTION_MAP[m[3]] + (NUM_MAP[m[4]] || m[4])
+  }
+
+  // Pattern B: 炮二平五 / 马8进7 / 卒1进1
+  m = zh.match(new RegExp(`^(${PIECE_CLS})(${NUM_CLS})(${ACT_CLS})(${NUM_CLS})$`))
+  if (m) {
+    return PIECE_MAP[m[1]] + (NUM_MAP[m[2]] || m[2]) + ACTION_MAP[m[3]] + (NUM_MAP[m[4]] || m[4])
+  }
+
+  // Pattern C: 一兵平1 / 二卒进1 → Pa.1 / p b+1
+  m = zh.match(new RegExp(`^([一二三四五])(${PIECE_CLS})(${ACT_CLS})(${NUM_CLS})$`))
+  if (m) {
+    const label = { '一': 'a', '二': 'b', '三': 'c', '四': 'd', '五': 'e' }[m[1]]
+    return PIECE_MAP[m[2]] + label + ACTION_MAP[m[3]] + (NUM_MAP[m[4]] || m[4])
+  }
+
+  return ''
+}
+
 // === notation string -> InternalMove ===
 
 export function moveFromSan(
@@ -316,6 +375,13 @@ export function moveFromSan(
   strict = false,
 ): InternalMove | null {
   const cleanMove = strippedSan(san)
+
+  // Chinese WXF -> letter WXF (permissive)
+  if (/[\u4e00-\u9fff]/.test(cleanMove)) {
+    const letterFormat = zhToWxf(cleanMove)
+    if (letterFormat) return moveFromSan(letterFormat, turn, legalMoves, strict)
+    return null
+  }
 
   // Null move
   if (cleanMove == SAN_NULLMOVE) {
@@ -362,9 +428,134 @@ export function moveFromSan(
     }
   }
 
-  // Permissive parser - try WXF format
+  // Permissive parser - handle label WXF format: [piece][a-e][action][target] (e.g. 'Pa.3')
+  const labelMatch = cleanMove.match(
+    /^([KABNRCPkabnrcp])([a-e])([+.x-])([0-9])$/,
+  )
+  if (labelMatch) {
+    const pieceLetter = labelMatch[1]
+    const label = labelMatch[2]
+    const action = labelMatch[3]
+    const targetNum = parseInt(labelMatch[4], 10)
+    const piece = pieceLetter.toLowerCase() as PieceSymbol
+
+    // Get all legal moves of this piece type
+    const labelMoves = legalMoves.filter((m) => m.piece === piece)
+    if (labelMoves.length < 4) return null
+
+    // Sort pawns across all columns/ranks to match the a-e labeling order
+    // 'a' = front-most (closest to opponent), 'e' = back-most (closest to own side)
+    const isRed = turn === WHITE
+    labelMoves.sort((a, b) => {
+      // For Red, front = higher rank; for Black, front = lower rank
+      return isRed ? rank(b.from) - rank(a.from) : rank(a.from) - rank(b.from)
+    })
+
+    // Find which label this from-square corresponds to
+    const seenFrom = new Set<number>()
+    const sortedFroms: number[] = []
+    for (const m of labelMoves) {
+      if (!seenFrom.has(m.from)) {
+        seenFrom.add(m.from)
+        sortedFroms.push(m.from)
+      }
+    }
+
+    const labelIdx = label.charCodeAt(0) - 97 // a=0, b=1, c=2...
+    if (labelIdx < 0 || labelIdx >= sortedFroms.length) return null
+    const targetFrom = sortedFroms[labelIdx]
+
+    // Check all moves from this piece
+    for (const m of labelMoves) {
+      if (m.from !== targetFrom) continue
+      if (action === '.') {
+        let targetFile: number
+        if (turn === WHITE) targetFile = 9 - targetNum
+        else targetFile = targetNum - 1
+        if (file(m.to) === targetFile && rank(m.from) === rank(m.to)) return m
+      } else if (action === '+' || action === '-') {
+        if (piece === 'r' || piece === 'c' || piece === 'k' || piece === 'p') {
+          const forward = turn === WHITE ? 1 : -1
+          if ((rank(m.to) - rank(m.from)) * forward === targetNum) return m
+        } else {
+          let targetFile: number
+          if (turn === WHITE) targetFile = 9 - targetNum
+          else targetFile = targetNum - 1
+          if (file(m.to) === targetFile) return m
+        }
+      }
+    }
+  }
+
+  // Permissive parser - handle front/back WXF: [piece][+-.][action][target] (e.g. 'R+.5')
+  const fbMatch = cleanMove.match(
+    /^([KABNRCPkabnrcp])([+\-.])([+.x-])([0-9])$/,
+  )
+  if (fbMatch) {
+    const pieceLetter = fbMatch[1]
+    const prefix = fbMatch[2]
+    const action = fbMatch[3]
+    const targetNum = parseInt(fbMatch[4], 10)
+    const piece = pieceLetter.toLowerCase() as PieceSymbol
+
+    // Group legal moves of this piece by file
+    const byFile = new Map<number, InternalMove[]>()
+    for (const m of legalMoves) {
+      if (m.piece === piece) {
+        const f = file(m.from)
+        if (!byFile.has(f)) byFile.set(f, [])
+        byFile.get(f)!.push(m)
+      }
+    }
+
+    for (const [, moves] of byFile) {
+      if (moves.length < 2) continue
+
+      // Sort by rank to determine front/middle/back order
+      const isRed = turn === WHITE
+      moves.sort((a, b) =>
+        isRed ? rank(b.from) - rank(a.from) : rank(a.from) - rank(b.from),
+      )
+
+      // Collect unique from-squares in order
+      const seen = new Set<number>()
+      const sorted: number[] = []
+      for (const m of moves) {
+        if (!seen.has(m.from)) {
+          seen.add(m.from)
+          sorted.push(m.from)
+        }
+      }
+
+      const idx = prefix === '+' ? 0 : prefix === '-' ? sorted.length - 1 : 1
+      if (idx < 0 || idx >= sorted.length) continue
+      const targetFrom = sorted[idx]
+
+      for (const m of moves) {
+        if (m.from !== targetFrom) continue
+        if (action === '.') {
+          let targetFile: number
+          if (turn === WHITE) targetFile = 9 - targetNum
+          else targetFile = targetNum - 1
+          if (file(m.to) === targetFile && rank(m.from) === rank(m.to)) return m
+        } else if (action === '+' || action === '-') {
+          if (piece === 'r' || piece === 'c' || piece === 'k' || piece === 'p') {
+            const forward = turn === WHITE ? 1 : -1
+            if ((rank(m.to) - rank(m.from)) * forward === targetNum) return m
+          } else {
+            let targetFile: number
+            if (turn === WHITE) targetFile = 9 - targetNum
+            else targetFile = targetNum - 1
+            if (file(m.to) === targetFile) return m
+          }
+        }
+      }
+    }
+  }
+
+  // Permissive parser - try WXF format (e.g. 'N8+7', 'C2.5')
   const wxfMatch = cleanMove.match(
-    /^([KAEHRCPkaehrcp])?([1-9])([+=.x-])([0-9])/,
+    /^([KABNRCPkabnrcp])?([1-9])([+.x-])([0-9])/,
   )
   if (wxfMatch) {
     const piece = wxfMatch[1]?.toLowerCase() || PAWN
@@ -392,8 +583,8 @@ export function moveFromSan(
         const mToFile = file(m.to)
         const mToRank = rank(m.to)
 
-        // WXF target: for '=' action, target is column; for +/- action, target is steps
-        if (action === '=') {
+        // WXF target: for '.' action, target is column; for +/- action, target is steps or column
+        if (action === '.') {
           // Horizontal move - target is column
           let targetFile: number
           if (turn === WHITE) {
@@ -405,16 +596,32 @@ export function moveFromSan(
             return m
           }
         } else if (action === '+' || action === '-') {
-          // Forward/backward - target is steps or column
-          const forward = turn === WHITE ? 1 : -1
-          const actualSteps = (rank(m.to) - rank(m.from)) * forward
-          if (actualSteps === targetNum) {
-            return m
+          // For straight pieces (r,c,k,p): target is steps
+          // For non-straight (n,a,b): target is destination column
+          if (piece === 'r' || piece === 'c' || piece === 'k' || piece === 'p') {
+            const forward = turn === WHITE ? 1 : -1
+            const actualSteps = (rank(m.to) - rank(m.from)) * forward
+            if (actualSteps === targetNum) {
+              return m
+            }
+          } else {
+            let targetFile: number
+            if (turn === WHITE) {
+              targetFile = 9 - targetNum
+            } else {
+              targetFile = targetNum - 1
+            }
+            if (mToFile === targetFile) {
+              return m
+            }
           }
         }
       }
     }
   }
+
+  // Permissive parser - handle label WXF with piece+piece format
+  // (already handled above via labelMatch)
 
   return null
 }
