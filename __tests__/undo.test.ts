@@ -7,7 +7,7 @@ test('undo - 基本撤销', () => {
 
   chess.move('b0c2')
   chess.move('b9a7')
-  expect(chess.undo()?.zh).toBe('马2进1')
+  expect(chess.undo()?.zh).toBe('马２进１')
   expect(chess.undo()?.zh).toBe('马八进七')
   expect(chess.undo()).toBeNull()
 })

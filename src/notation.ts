@@ -283,7 +283,7 @@ export function moveToZh(wxf: string, color: Color): string {
   else if (action === '+') zhAction = '进'
   else zhAction = '退'
 
-  const toZhNum = (n: string) => (isRed ? redNums[parseInt(n) - 1] : n)
+  const toZhNum = (n: string) => (isRed ? redNums[parseInt(n) - 1] : '１２３４５６７８９'[parseInt(n) - 1])
 
   let zh: string
   if (zhPrefix) {
@@ -330,6 +330,8 @@ export function zhToWxf(zh: string): string {
   const NUM_MAP: Record<string, string> = {
     '一': '1', '二': '2', '三': '3', '四': '4', '五': '5',
     '六': '6', '七': '7', '八': '8', '九': '9',
+    '１': '1', '２': '2', '３': '3', '４': '4', '５': '5',
+    '６': '6', '７': '7', '８': '8', '９': '9',
   }
 
   const ACTION_MAP: Record<string, string> = {
@@ -341,7 +343,7 @@ export function zhToWxf(zh: string): string {
   }
 
   const PIECE_CLS = '[车俥車马傌馬炮砲士仕象相帅將帅将兵卒]'
-  const NUM_CLS = '[一二三四五六七八九1-9]'
+  const NUM_CLS = '[一二三四五六七八九１-９1-9]'
   const ACT_CLS = '[进退平]'
 
   // Pattern A: 前车平五 / 后炮进三 → R+.5 / C-.3

@@ -7,7 +7,7 @@ test('_moveToZh - 车', () => {
   const move1 = chess.move({ from: 'c7', to: 'c5' })
   expect(move1.zh).toBe('前车退二')
   const move2 = chess.move({ from: 'g5', to: 'g3' })
-  expect(move2.zh).toBe('前车进2')
+  expect(move2.zh).toBe('前车进２')
 })
 
 test('_moveToZh - 兵（两列各多兵，全局编号）', () => {
@@ -17,7 +17,7 @@ test('_moveToZh - 兵（两列各多兵，全局编号）', () => {
   const move1 = chess.move({ from: 'f8', to: 'g8' })
   expect(move1.zh).toBe('一兵平三')
   const move2 = chess.move({ from: 'd4', to: 'c4' })
-  expect(move2.zh).toBe('二卒平3')
+  expect(move2.zh).toBe('二卒平３')
 })
 
 test('_moveToZh - 兵（同列前后两兵，红前兵横移）', () => {
@@ -29,7 +29,7 @@ test('_moveToZh - 兵（同列前后两兵，红前兵横移）', () => {
 test('_moveToZh - 兵（同列前后两兵，黑后卒横移）', () => {
   const chess = new Chess('5k3/4P4/4P4/9/9/9/4p4/4p4/9/4K4 b - - 0 1')
   const move = chess.move({ from: 'e3', to: 'f3' })
-  expect(move.zh).toBe('后卒平6')
+  expect(move.zh).toBe('后卒平６')
 })
 
 test('_moveToZh - 兵（同列三兵，红前兵横移）', () => {
@@ -47,7 +47,7 @@ test('_moveToZh - 兵（单列独兵用列号，红兵前进）', () => {
 test('_moveToZh - 兵（单列独兵用列号，黑卒前进）', () => {
   const chess = new Chess('5k3/9/4P4/9/9/9/4p4/9/9/4K4 b - - 0 1')
   const move = chess.move({ from: 'e3', to: 'e2' })
-  expect(move.zh).toBe('卒5进1')
+  expect(move.zh).toBe('卒５进１')
 })
 
 test('_moveToZh - 士象', () => {
@@ -55,7 +55,7 @@ test('_moveToZh - 士象', () => {
   const move1 = chess.move({ from: 'g0', to: 'e2' })
   expect(move1.zh).toBe('相三进五')
   const move2 = chess.move({ from: 'd7', to: 'e8' })
-  expect(move2.zh).toBe('士4退5')
+  expect(move2.zh).toBe('士４退５')
 })
 
 test('FEN - 只传棋子排列，默认红方先行', () => {
