@@ -1,5 +1,5 @@
 {
-  "name": "xiangqi.js",
+  "name": "@west-shell/xiangqi.js",
   "description": "TypeScript library for Chinese chess (Xiangqi) move generation, validation, execution, and game state.",
   "version": "1.0.0",
   "license": "BSD-2-Clause",
