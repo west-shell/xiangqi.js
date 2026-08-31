@@ -138,6 +138,115 @@ export function validateFen(fen: string): { ok: boolean; error?: string } {
     }
   }
 
+  // 10th criterion: positional checks for advisors, elephants, and flying general
+  const board: (string | null)[][] = []
+  for (let i = 0; i < rows.length; i++) {
+    const row: (string | null)[] = []
+    for (let k = 0; k < rows[i].length; k++) {
+      if (isDigit(rows[i][k])) {
+        for (let d = 0; d < parseInt(rows[i][k], 10); d++) {
+          row.push(null)
+        }
+      } else {
+        row.push(rows[i][k])
+      }
+    }
+    board.push(row)
+  }
+
+  // Advisors must be on specific palace diagonal points
+  // Red advisor (A): (3,9) (5,9) (4,8) (3,7) (5,7)
+  // Black advisor (a): (3,0) (5,0) (4,1) (3,2) (5,2)
+  const RED_ADVISOR_POSITIONS = new Set(['3,9', '5,9', '4,8', '3,7', '5,7'])
+  const BLACK_ADVISOR_POSITIONS = new Set(['3,0', '5,0', '4,1', '3,2', '5,2'])
+
+  for (let r = 0; r < 10; r++) {
+    for (let f = 0; f < 9; f++) {
+      const piece = board[r][f]
+      if (piece === 'A') {
+        if (!RED_ADVISOR_POSITIONS.has(`${f},${r}`)) {
+          return {
+            ok: false,
+            error: 'Invalid FEN: red advisor is on an invalid position',
+          }
+        }
+      } else if (piece === 'a') {
+        if (!BLACK_ADVISOR_POSITIONS.has(`${f},${r}`)) {
+          return {
+            ok: false,
+            error: 'Invalid FEN: black advisor is on an invalid position',
+          }
+        }
+      }
+    }
+  }
+
+  // Elephants must be on specific "field" diagonal points (not crossing the river)
+  // Red elephant (B/E): (2,9) (6,9) (0,7) (4,7) (8,7) (2,5) (6,5)
+  // Black elephant (b/e): (2,0) (6,0) (0,2) (4,2) (8,2) (2,4) (6,4)
+  const RED_ELEPHANT_POSITIONS = new Set([
+    '2,9', '6,9', '0,7', '4,7', '8,7', '2,5', '6,5',
+  ])
+  const BLACK_ELEPHANT_POSITIONS = new Set([
+    '2,0', '6,0', '0,2', '4,2', '8,2', '2,4', '6,4',
+  ])
+
+  for (let r = 0; r < 10; r++) {
+    for (let f = 0; f < 9; f++) {
+      const piece = board[r][f]
+      if (piece === 'B' || piece === 'E') {
+        if (!RED_ELEPHANT_POSITIONS.has(`${f},${r}`)) {
+          return {
+            ok: false,
+            error: 'Invalid FEN: red elephant is on an invalid position',
+          }
+        }
+      } else if (piece === 'b' || piece === 'e') {
+        if (!BLACK_ELEPHANT_POSITIONS.has(`${f},${r}`)) {
+          return {
+            ok: false,
+            error: 'Invalid FEN: black elephant is on an invalid position',
+          }
+        }
+      }
+    }
+  }
+
+  // Flying general: kings must not face each other on the same file with no intervening piece
+  let redKingRow = -1
+  let redKingFile = -1
+  let blackKingRow = -1
+  let blackKingFile = -1
+  for (let r = 0; r < 10; r++) {
+    for (let f = 0; f < 9; f++) {
+      if (board[r][f] === 'K') {
+        redKingRow = r
+        redKingFile = f
+      } else if (board[r][f] === 'k') {
+        blackKingRow = r
+        blackKingFile = f
+      }
+    }
+  }
+
+  if (redKingFile === blackKingFile) {
+    let blocked = false
+    const minRow = Math.min(redKingRow, blackKingRow)
+    const maxRow = Math.max(redKingRow, blackKingRow)
+    for (let r = minRow + 1; r < maxRow; r++) {
+      if (board[r][redKingFile] !== null) {
+        blocked = true
+        break
+      }
+    }
+    if (!blocked) {
+      return {
+        ok: false,
+        error: 'Invalid FEN: kings are facing each other (flying general)',
+      }
+    }
+  }
+
   return { ok: true }
 }
 
