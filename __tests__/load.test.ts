@@ -18,7 +18,7 @@ test('load - 加载中局局面', () => {
 })
 
 test('load - 加载仅有双将的局面', () => {
-  const fen = '4k4/9/9/9/9/9/9/9/9/4K4 w - - 0 1'
+  const fen = '4k4/9/9/9/9/9/9/9/9/3K5 w - - 0 1'
   const chess = new Chess(fen)
   expect(chess.fen()).toBe(fen)
 })
@@ -31,7 +31,7 @@ test('load - 无效 FEN 抛出错误', () => {
 test('load - 保留头部加载', () => {
   const chess = new Chess()
   chess.setHeader('White', '胡荣华')
-  const fen = '4k4/9/9/9/9/9/9/9/9/4K4 w - - 0 1'
+  const fen = '4k4/9/9/9/9/9/9/9/9/3K5 w - - 0 1'
   chess.load(fen, { preserveHeaders: true })
   expect(chess.fen()).toBe(fen)
   expect(chess.getHeaders().White).toBe('胡荣华')

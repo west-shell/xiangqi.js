@@ -3,7 +3,7 @@ import { Chess } from '../src/chess'
 import { expect, test } from 'vitest'
 
 test('子力不足 - 将 vs 将', () => {
-  const chess = new Chess('4k4/9/9/9/9/9/9/9/9/4K4 w - - 0 1')
+  const chess = new Chess('4k4/9/9/9/9/9/9/9/9/3K5 w - - 0 1')
   expect(chess.isInsufficientMaterial()).toBe(true)
 })
 
@@ -13,7 +13,8 @@ test('子力不足 - 将+士 vs 将', () => {
 })
 
 test('子力不足 - 将+象 vs 将', () => {
-  const chess = new Chess('4k4/9/9/9/9/9/9/9/4E4/4K4 w - - 0 1')
+  // 相放在合法点位 (4,7)（原 (4,8) 非法），同时阻挡双将同列
+  const chess = new Chess('4k4/9/9/9/9/9/9/4E4/9/4K4 w - - 0 1')
   expect(chess.isInsufficientMaterial()).toBe(true)
 })
 

@@ -13,7 +13,8 @@ test.each([
     fen: 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1',
     ok: true,
   },
-  { fen: '4k4/9/9/9/9/9/9/9/9/4K4 w - - 0 1', ok: true }, // 仅剩双将
+  { fen: '4k4/9/9/9/9/9/9/9/9/3K5 w - - 0 1', ok: true }, // 仅剩双将(不同列)
+  { fen: '4k4/9/9/9/9/9/9/9/9/4K4 w - - 0 1', ok: false }, // 双将对脸(白脸将)
   {
     fen: 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1',
     ok: true,

@@ -23,7 +23,7 @@ test('findPiece - 查找多个棋子', () => {
 })
 
 test('findPiece - 无此棋子返回空数组', () => {
-  const chess = new Chess('9/9/9/9/9/4k4/9/9/9/4K4 w - - 0 1')
+  const chess = new Chess('4k4/9/9/9/9/9/9/9/9/3K5 w - - 0 1')
   expect(chess.findPiece({ type: PAWN, color: WHITE })).toEqual([])
 })
 

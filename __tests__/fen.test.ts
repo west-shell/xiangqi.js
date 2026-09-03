@@ -7,8 +7,8 @@ describe('load() / fen() 对称性测试', () => {
   const validPositions = [
     'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1',
     'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR b - - 0 1',
-    '4k4/9/9/9/9/9/9/9/9/4K4 w - - 0 1',
-    '4k4/9/9/9/9/9/9/9/9/4K4 w - - 0 1',
+    '4k4/9/9/9/9/9/9/9/9/3K5 w - - 0 1', // 双王不同列 - 合法
+    '4k4/9/9/9/9/4R4/9/9/9/4K4 w - - 0 1', // 同列但有阻挡 - 合法
   ]
 
   const chess = new Chess()
@@ -29,8 +29,8 @@ test('fen - 走一步后 FEN 正确更新', () => {
   )
 })
 
-
-const DEFAULT_FEN = 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1'
+const DEFAULT_FEN =
+  'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1'
 
 describe('FEN基础格式检查', () => {
   test('标准开局FEN合法', () => {
@@ -38,7 +38,9 @@ describe('FEN基础格式检查', () => {
   })
 
   test('字段数量不合法 - 7字段', () => {
-    const result = validateFen('rnbakabnr/9/9/9/9/9/9/9/9/rnbakabnr w - - 0 1 x')
+    const result = validateFen(
+      'rnbakabnr/9/9/9/9/9/9/9/9/rnbakabnr w - - 0 1 x',
+    )
     expect(result.ok).toBe(false)
     expect(result.error).toContain('1 to 6')
   })
@@ -79,13 +81,17 @@ describe('FEN基础格式检查', () => {
   })
 
   test('连续数字非法', () => {
-    const result = validateFen('rnbakabnr/9/1c5c1/p1p1p1p1p/9/22/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1')
+    const result = validateFen(
+      'rnbakabnr/9/1c5c1/p1p1p1p1p/9/22/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1',
+    )
     expect(result.ok).toBe(false)
     expect(result.error).toContain('consecutive number')
   })
 
   test('非法棋子字符', () => {
-    const result = validateFen('rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNzAKABNR w - - 0 1')
+    const result = validateFen(
+      'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNzAKABNR w - - 0 1',
+    )
     expect(result.ok).toBe(false)
     expect(result.error).toContain('invalid piece')
   })

@@ -8,8 +8,8 @@ test('isGameOver - 初始局面未结束', () => {
 })
 
 test('isGameOver - 子力不足时结束', () => {
-  // 双方各只剩将（子力不足和棋）
-  const chess = new Chess('4k4/9/9/9/9/9/9/9/9/4K4 w - - 0 1')
+  // 双方各只剩将（不同列，子力不足和棋）
+  const chess = new Chess('4k4/9/9/9/9/9/9/9/9/3K5 w - - 0 1')
   expect(chess.isGameOver()).toBe(true)
 })
 

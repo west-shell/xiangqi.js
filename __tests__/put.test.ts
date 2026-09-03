@@ -34,7 +34,7 @@ test('put - 不能放置超过一个将', () => {
 })
 
 test('put - 放子后 FEN 正确', () => {
-  const chess = new Chess('9/9/9/9/9/4k4/9/9/9/4K4 w - - 0 1')
+  const chess = new Chess('4k4/9/9/9/9/9/9/9/9/3K5 w - - 0 1')
   chess.put({ type: CANNON, color: WHITE }, 'e4' as Square)
   expect(chess.fen()).toContain('4C4')
 })
