@@ -1,7 +1,7 @@
 {
   "name": "@weshell/xiangqi.js",
   "description": "TypeScript library for Chinese chess (Xiangqi) move generation, validation, execution, and game state.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "BSD-2-Clause",
   "main": "dist/cjs/chess.js",
   "module": "dist/esm/chess.js",
