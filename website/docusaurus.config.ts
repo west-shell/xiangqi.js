@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic'
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'chess.js',
+  title: 'xiangqi.js',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -13,26 +13,23 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: 'https://jhlywa.github.io',
+  url: 'https://west-shell.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/chess.js/',
+  baseUrl: '/xiangqi.js/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'jhlywa', // Usually your GitHub org/user name.
-  projectName: 'chess.js', // Usually your repo name.
+  organizationName: 'west-shell', // Usually your GitHub org/user name.
+  projectName: 'xiangqi.js', // Usually your repo name.
 
   trailingSlash: true,
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
 
-  // Even if you don't use internationalization, you can use this field to set
-  // useful metadata like html lang. For example, if your site is Chinese, you
-  // may want to replace "en" with "zh-Hans".
   i18n: {
-    defaultLocale: 'en',
-    locales: ['en'],
+    defaultLocale: 'zh-Hans',
+    locales: ['zh-Hans', 'en'],
   },
 
   presets: [
@@ -42,15 +39,6 @@ const config: Config = {
         docs: {
           routeBasePath: '/',
           sidebarPath: false,
-          lastVersion: 'v1.4.0',
-          versions: {
-            current: {
-              banner: 'unreleased',
-            },
-            'v1.4.0': {
-              banner: 'none',
-            },
-          },
         },
       } satisfies Preset.Options,
     ],
@@ -58,14 +46,14 @@ const config: Config = {
 
   themeConfig: {
     navbar: {
-      title: 'chess.js',
+      title: 'xiangqi.js',
       items: [
         {
-          type: 'docsVersionDropdown',
+          type: 'localeDropdown',
           position: 'right',
         },
         {
-          href: 'https://github.com/jhlywa/chess.js',
+          href: 'https://github.com/west-shell/xiangqi.js',
           label: 'GitHub',
           position: 'right',
         },
@@ -83,16 +71,16 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/jhlywa/chess.js',
+              href: 'https://github.com/west-shell/xiangqi.js',
             },
             {
               label: 'NPM',
-              href: 'https://www.npmjs.com/package/chess.js',
+              href: 'https://www.npmjs.com/package/@weshell/xiangqi.js',
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Jeff Hlywa.`,
+      copyright: `Copyright © ${new Date().getFullYear()} weshell. Based on chess.js by Jeff Hlywa.`,
     },
     prism: {
       theme: prismThemes.github,

@@ -11,31 +11,61 @@ async function main() {
 
   const newVersion = process.argv[2]
 
-  if (!/^\d+\.\d+\..*$/.test(newVersion)) {
-    console.error('Version format should be X.Y.Z')
+  if (!/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(newVersion)) {
+    console.error('Version format should be X.Y.Z or X.Y.Z-prerelease')
     process.exit(1)
   }
 
   await updatePackageVersion(newVersion)
+  await updateLockfileVersion(newVersion)
   await tagDocumentation(newVersion)
-  await updateDocusaurusConfig(newVersion)
+}
+
+// package.json contains a UTF-8 BOM; strip it before parsing and don't
+// write it back.
+async function readJson(filePath: string): Promise<any> {
+  const contents = await fs.readFile(filePath, 'utf-8')
+  return JSON.parse(contents.replace(/^\uFEFF/, ''))
+}
+
+async function writeJson(filePath: string, data: any) {
+  await fs.writeFile(filePath, JSON.stringify(data, null, 2) + '\n')
 }
 
 async function updatePackageVersion(newVersion: string) {
   const filePath = path.join(__dirname, 'package.json')
-  let contents = await fs.readFile(filePath, 'utf-8')
+  const pkg = await readJson(filePath)
+  pkg.version = newVersion
+  await writeJson(filePath, pkg)
+  console.log(`package.json updated to ${newVersion}`)
+}
 
-  contents = contents.replace(
-    /"version": "[^"]*"/,
-    `"version": "${newVersion}"`,
-  )
+async function updateLockfileVersion(newVersion: string) {
+  const filePath = path.join(__dirname, 'package-lock.json')
+  if (!existsSync(filePath)) {
+    console.log('package-lock.json not found, skipping')
+    return
+  }
 
-  await fs.writeFile(filePath, contents)
-  console.log('Package version updated')
+  const lock = await readJson(filePath)
+  lock.version = newVersion
+  if (lock.packages && lock.packages['']) {
+    lock.packages[''].version = newVersion
+  }
+  await writeJson(filePath, lock)
+  console.log(`package-lock.json updated to ${newVersion}`)
 }
 
 async function tagDocumentation(version: string) {
   const websitePath = path.join(__dirname, 'website')
+
+  // Skip docs versioning when the website dependencies are not installed
+  // (docusaurus CLI is unavailable).
+  if (!existsSync(path.join(websitePath, 'node_modules'))) {
+    console.log('website/node_modules not found, skipping docs versioning')
+    return
+  }
+
   const versionedDocsPath = path.join(
     websitePath,
     'versioned_docs',
@@ -49,19 +79,10 @@ async function tagDocumentation(version: string) {
 
   execSync(`npm run docusaurus docs:version v${version}`, {
     cwd: websitePath,
+    stdio: 'inherit',
   })
 
   console.log('Documentation tagged')
-}
-
-async function updateDocusaurusConfig(newVersion: string) {
-  const filePath = path.join(__dirname, 'website', 'docusaurus.config.ts')
-  let contents = await fs.readFile(filePath, 'utf-8')
-
-  contents = contents.replace(/'v(\d+\.\d+\.[^']*)'/g, `'v${newVersion}'`)
-
-  await fs.writeFile(filePath, contents)
-  console.log('Docusaurus config updated')
 }
 
 main()
