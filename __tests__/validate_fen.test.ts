@@ -79,6 +79,20 @@ test.each([
     fen: 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 0',
     ok: false,
   },
+  // 前导/末尾空白
+  {
+    fen: 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1 ',
+    ok: true,
+  },
+  {
+    fen: ' rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w',
+    ok: true,
+  },
+  // 全 6 字段的复杂局面（含尾部空格，曾误判为字段数超限）
+  {
+    fen: '2baka3/3P3N1/bN7/7nc/9/4C1P2/P5n1P/B3R3B/4Apr2/2RAK3c w - - 0 1 ',
+    ok: true,
+  },
 ])('validateFen - $fen', ({ fen, ok }) => {
   expect(validateFen(fen).ok).toBe(ok)
 })

@@ -30,7 +30,7 @@ import { isDigit } from './board'
 
 export function validateFen(fen: string): { ok: boolean; error?: string } {
   // 1st criterion: at least 1 field (position), up to 6
-  const tokens = fen.split(/\s+/)
+  const tokens = fen.trim().split(/\s+/)
   if (tokens.length < 1 || tokens.length > 6) {
     return {
       ok: false,
@@ -185,10 +185,22 @@ export function validateFen(fen: string): { ok: boolean; error?: string } {
   // Red elephant (B/E): (2,9) (6,9) (0,7) (4,7) (8,7) (2,5) (6,5)
   // Black elephant (b/e): (2,0) (6,0) (0,2) (4,2) (8,2) (2,4) (6,4)
   const RED_ELEPHANT_POSITIONS = new Set([
-    '2,9', '6,9', '0,7', '4,7', '8,7', '2,5', '6,5',
+    '2,9',
+    '6,9',
+    '0,7',
+    '4,7',
+    '8,7',
+    '2,5',
+    '6,5',
   ])
   const BLACK_ELEPHANT_POSITIONS = new Set([
-    '2,0', '6,0', '0,2', '4,2', '8,2', '2,4', '6,4',
+    '2,0',
+    '6,0',
+    '0,2',
+    '4,2',
+    '8,2',
+    '2,4',
+    '6,4',
   ])
 
   for (let r = 0; r < 10; r++) {
@@ -256,7 +268,7 @@ export function parseFen(fen: string): {
   halfMoves: number
   moveNumber: number
 } {
-  let tokens = fen.split(/\s+/)
+  let tokens = fen.trim().split(/\s+/)
 
   // append commonly omitted fen tokens
   if (tokens.length >= 1 && tokens.length < 6) {
