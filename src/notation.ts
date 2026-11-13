@@ -320,6 +320,8 @@ export function moveToIccs(move: InternalMove): string {
 export function zhToWxf(zh: string): string {
   const PIECE_MAP: Record<string, string> = {
     帅: 'K',
+    將: 'K',
+    帥: 'K',
     将: 'K',
     仕: 'A',
     士: 'A',
@@ -333,6 +335,7 @@ export function zhToWxf(zh: string): string {
     俥: 'R',
     炮: 'C',
     砲: 'C',
+    包: 'C',
     兵: 'P',
     卒: 'P',
   }
@@ -347,6 +350,15 @@ export function zhToWxf(zh: string): string {
     七: '7',
     八: '8',
     九: '9',
+    壹: '1',
+    贰: '2',
+    叁: '3',
+    肆: '4',
+    伍: '5',
+    陆: '6',
+    柒: '7',
+    捌: '8',
+    玖: '9',
     '１': '1',
     '２': '2',
     '３': '3',
@@ -360,6 +372,7 @@ export function zhToWxf(zh: string): string {
 
   const ACTION_MAP: Record<string, string> = {
     进: '+',
+    進: '+',
     退: '-',
     平: '.',
   }
@@ -368,15 +381,16 @@ export function zhToWxf(zh: string): string {
     前: '+',
     中: '.',
     后: '-',
+    後: '-',
   }
 
-  const PIECE_CLS = '[车俥車马傌馬炮砲士仕象相帅將帅将兵卒]'
-  const NUM_CLS = '[一二三四五六七八九１-９1-9]'
-  const ACT_CLS = '[进退平]'
+  const PIECE_CLS = '[车俥車马傌馬炮砲包士仕象相帅帥將将兵卒]'
+  const NUM_CLS = '[一二三四五六七八九壹贰叁肆伍陆柒捌玖１-９1-9]'
+  const ACT_CLS = '[进進退平]'
 
-  // Pattern A: 前车平五 / 后炮进三 → R+.5 / C-.3
+  // Pattern A: 前车平五 / 后炮进三 / 後卒平４ → R+.5 / C-.3 / P-.4
   let m = zh.match(
-    new RegExp(`^([前后中])(${PIECE_CLS})(${ACT_CLS})(${NUM_CLS})$`),
+    new RegExp(`^([前后中後])(${PIECE_CLS})(${ACT_CLS})(${NUM_CLS})$`),
   )
   if (m) {
     return (
@@ -387,7 +401,7 @@ export function zhToWxf(zh: string): string {
     )
   }
 
-  // Pattern B: 炮二平五 / 马8进7 / 卒1进1
+  // Pattern B: 炮二平五 / 马8进7 / 卒1进1 / 馬８進７
   m = zh.match(
     new RegExp(`^(${PIECE_CLS})(${NUM_CLS})(${ACT_CLS})(${NUM_CLS})$`),
   )
@@ -400,12 +414,25 @@ export function zhToWxf(zh: string): string {
     )
   }
 
-  // Pattern C: 一兵平1 / 二卒进1 → Pa.1 / p b+1
+  // Pattern C: 一兵平1 / 二卒进1 / 壹兵平1 → Pa.1 / p b+1 / Pa.1
   m = zh.match(
-    new RegExp(`^([一二三四五])(${PIECE_CLS})(${ACT_CLS})(${NUM_CLS})$`),
+    new RegExp(
+      `^([一二三四五壹贰叁肆伍])(${PIECE_CLS})(${ACT_CLS})(${NUM_CLS})$`,
+    ),
   )
   if (m) {
-    const label = { 一: 'a', 二: 'b', 三: 'c', 四: 'd', 五: 'e' }[m[1]]
+    const label = {
+      一: 'a',
+      二: 'b',
+      三: 'c',
+      四: 'd',
+      五: 'e',
+      壹: 'a',
+      贰: 'b',
+      叁: 'c',
+      肆: 'd',
+      伍: 'e',
+    }[m[1]]
     return PIECE_MAP[m[2]] + label + ACTION_MAP[m[3]] + (NUM_MAP[m[4]] || m[4])
   }
 
@@ -486,35 +513,62 @@ export function moveFromSan(
     const action = labelMatch[3]
     const targetNum = parseInt(labelMatch[4], 10)
     const piece = pieceLetter.toLowerCase() as PieceSymbol
-
-    // Get all legal moves of this piece type
-    const labelMoves = legalMoves.filter((m) => m.piece === piece)
-    if (labelMoves.length < 4) return null
-
-    // Sort pawns across all columns/ranks to match the a-e labeling order
-    // 'a' = front-most (closest to opponent), 'e' = back-most (closest to own side)
     const isRed = turn === WHITE
-    labelMoves.sort((a, b) => {
-      // For Red, front = higher rank; for Black, front = lower rank
-      return isRed ? rank(b.from) - rank(a.from) : rank(a.from) - rank(b.from)
-    })
 
-    // Find which label this from-square corresponds to
-    const seenFrom = new Set<number>()
-    const sortedFroms: number[] = []
-    for (const m of labelMoves) {
-      if (!seenFrom.has(m.from)) {
-        seenFrom.add(m.from)
-        sortedFroms.push(m.from)
+    // Label slots are fixed by board position and must mirror the labeling
+    // order of moveToWxf/wxfPawnPrefix: group this side's pieces by file;
+    // when only one file holds duplicates, the labels run front-to-back
+    // within that file; when several files hold duplicates, the labels run
+    // globally across those files in WXF column order (red cols 1-9 =
+    // files i-a; black cols 1-9 = files a-i), front-to-back within each
+    // file. Fall back to squares derived from legal moves when no board is
+    // provided.
+    const byFile = new Map<number, number[]>()
+    if (board) {
+      for (let i = 0; i < board.length; i++) {
+        const p = board[i]
+        if (p && p.type === piece && p.color === turn) {
+          const f = file(i)
+          if (!byFile.has(f)) byFile.set(f, [])
+          byFile.get(f)!.push(i)
+        }
+      }
+    } else {
+      const seen = new Set<number>()
+      for (const m of legalMoves) {
+        if (m.piece !== piece || seen.has(m.from)) continue
+        seen.add(m.from)
+        const f = file(m.from)
+        if (!byFile.has(f)) byFile.set(f, [])
+        byFile.get(f)!.push(m.from)
+      }
+    }
+    for (const rows of byFile.values()) {
+      rows.sort((a, b) =>
+        isRed ? rank(b) - rank(a) : rank(a) - rank(b),
+      )
+    }
+
+    const multiFiles = [...byFile.entries()]
+      .filter(([, rows]) => rows.length > 1)
+      .map(([f]) => f)
+      .sort((a, b) => (isRed ? b - a : a - b))
+
+    const labeledFroms: number[] = []
+    if (multiFiles.length === 1) {
+      labeledFroms.push(...byFile.get(multiFiles[0])!)
+    } else if (multiFiles.length > 1) {
+      for (const f of multiFiles) {
+        labeledFroms.push(...byFile.get(f)!)
       }
     }
 
     const labelIdx = label.charCodeAt(0) - 97 // a=0, b=1, c=2...
-    if (labelIdx < 0 || labelIdx >= sortedFroms.length) return null
-    const targetFrom = sortedFroms[labelIdx]
+    if (labelIdx < 0 || labelIdx >= labeledFroms.length) return null
+    const targetFrom = labeledFroms[labelIdx]
 
-    // Check all moves from this piece
-    for (const m of labelMoves) {
+    // Check all legal moves from this piece
+    for (const m of legalMoves) {
       if (m.from !== targetFrom) continue
       if (action === '.') {
         let targetFile: number

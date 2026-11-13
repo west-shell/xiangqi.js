@@ -81,7 +81,17 @@ moveNumber "move number"
     = [0-9]*'.' _ [.]*
 
 san "Chinese chess algebraic notation"
-	= $((WXF_move / ICCS_move))
+	= $((zh_move / WXF_move / ICCS_move))
+zh_move "Chinese notation move (简繁/全角/大写数字)"
+	= $(zh_first zh_second zh_action zh_fourth)
+zh_first
+	= [车車俥马馬傌相象仕士帅帥将將炮包砲兵卒前中后後一二三四五壹贰叁肆伍１２３４５1-5]
+zh_second
+	= [车車俥马馬傌相象仕士炮包砲兵卒一二三四五六七八九壹贰叁肆伍陆柒捌玖１２３４５６７８９1-9]
+zh_action
+	= [进進退平]
+zh_fourth
+	= [一二三四五六七八九壹贰叁肆伍陆柒捌玖１２３４５６７８９1-9]
 WXF_move
 	= (front_back_piece / pawn_piece / piece_col / pawn_col) [+=.x\-][0-9][+#]?
 front_back_piece
@@ -93,7 +103,7 @@ piece_col
 pawn_col
 	= [1-9]
 ICCS_move
-	= [a-i][0-9]"-"?[a-i][0-9][+#]?
+	= [a-iA-I][0-9]"-"?[a-iA-I][0-9][+#]?
 
 suffixAnnotation "suffix annotation"
 	= $[!?] |1..2|

@@ -57,3 +57,44 @@ test('loadPgn - 宽松解析器接受 ICCS 格式', () => {
   chess.loadPgn('1. b0c2 b9a7 *')
   expect(chess.fen()).toBeTruthy()
 })
+
+test('loadPgn - 中文着法 PGN', () => {
+  const chess = new Chess()
+  chess.loadPgn(`[Event "测试"]
+
+1. 炮二平五 炮８平５ 2. 马二进三 马８进７ 3. 车一平二 车９平８ *`)
+  expect(chess.history()).toHaveLength(6)
+})
+
+test('loadPgn - 中文着法带变着与注释', () => {
+  const chess = new Chess()
+  chess.loadPgn(
+    `1. 炮二平五 {中炮} 马８进７ (1... 炮８平５ 2. 马二进三) 2. 马二进三 *`,
+  )
+  expect(chess.history()).toHaveLength(3)
+})
+
+test('loadPgn - 繁体与全角数字混排', () => {
+  const chess = new Chess()
+  chess.loadPgn('1. 包二平伍 馬８進７ 2. 車一進一 卒９進１ *')
+  expect(chess.history()).toHaveLength(4)
+  expect(chess.history()).toEqual(['h2e2', 'h9g7', 'i0i1', 'i6i5'])
+})
+
+test('loadPgn - 大写带横线 ICCS（B0-C2）', () => {
+  const chess = new Chess()
+  chess.loadPgn('1. B0-C2 H9-G7 *')
+  expect(chess.history()).toHaveLength(2)
+})
+
+test('loadPgn - 大写无横线 ICCS（B0C2）', () => {
+  const chess = new Chess()
+  chess.loadPgn('1. B0C2 H9G7 *')
+  expect(chess.history()).toHaveLength(2)
+})
+
+test('loadPgn - 混合格式（ICCS + 中文 + WXF）', () => {
+  const chess = new Chess()
+  chess.loadPgn('1. b0c2 炮８平５ 2. h0g2 卒３进１ 3. R1+1 *')
+  expect(chess.history()).toHaveLength(5)
+})

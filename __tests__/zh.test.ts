@@ -133,6 +133,47 @@ test('move - 前后缀直行棋子进（黑前车进２）', () => {
   expect(`${move!.from}${move!.to}`).toBe('g5g3')
 })
 
+test('move - 繁体着法（包/車/馬/進）', () => {
+  const chess = new Chess()
+  const move1 = chess.move('包二平五')
+  expect(move1, '包二平五').not.toBeNull()
+  expect(`${move1!.from}${move1!.to}`).toBe('h2e2')
+  const move2 = chess.move('馬８進７')
+  expect(move2, '馬８進７').not.toBeNull()
+  expect(`${move2!.from}${move2!.to}`).toBe('h9g7')
+  const move3 = chess.move('車一進一')
+  expect(move3, '車一進一').not.toBeNull()
+  expect(`${move3!.from}${move3!.to}`).toBe('i0i1')
+})
+
+test('move - 繁体着法（帥/將/後）', () => {
+  const chess = new Chess('3k5/9/9/9/9/9/9/9/9/4K4 w - - 0 1')
+  const move = chess.move('帥五进一')
+  expect(move, '帥五进一').not.toBeNull()
+  expect(`${move!.from}${move!.to}`).toBe('e0e1')
+  chess.undo()
+  const chess2 = new Chess('4k4/9/9/9/9/9/9/9/9/3K5 b - - 0 1')
+  const move2 = chess2.move('將５進１')
+  expect(move2, '將５進１').not.toBeNull()
+  expect(`${move2!.from}${move2!.to}`).toBe('e9e8')
+})
+
+test('move - 繁体後缀（黑後卒平４）', () => {
+  const chess = new Chess('5k3/4P4/4P4/9/9/9/4p4/4p4/9/4K4 b - - 0 1')
+  const move = chess.move('後卒平４')
+  expect(move, '後卒平４').not.toBeNull()
+  expect(`${move!.from}${move!.to}`).toBe('e3d3')
+})
+
+test('move - 大写数字（壹贰叁肆伍陆柒捌玖）', () => {
+  const chess = new Chess()
+  expect(chess.move('炮贰平伍'), '炮贰平伍').not.toBeNull()
+  expect(chess.move('卒壹進壹'), '卒壹進壹').not.toBeNull()
+  expect(chess.move('马捌进柒'), '马捌进柒').not.toBeNull()
+  expect(chess.move('卒叁进壹'), '卒叁进壹').not.toBeNull()
+  expect(chess.move('车玖进壹'), '车玖进壹').not.toBeNull()
+})
+
 test('move - 百变象棋谱「八阵图」整局中文着法', () => {
   const chess = new Chess(
     '2bak3C/4a4/4b4/3P3R1/9/6R2/9/3p1p3/4K4/3r1r3 w - - 0 1',
@@ -173,6 +214,82 @@ test('move - 将军被牵制时前后缀按棋盘消歧（后炮退５）', () =
   const move = chess.move('后炮退５')
   expect(move).not.toBeNull()
   expect(`${move!.from}${move!.to}`).toBe('e4e9')
+})
+
+test('move - 百变象棋谱「廉蔺争功(改图2)」三卒平６（跨列全局编号）', () => {
+  const chess = new Chess(
+    '3a1k3/4a4/4b3R/4p4/6b2/2pc5/4P4/2p1B3R/4p4/3K5 w - - 0 1',
+  )
+  // 主线 1-7（至 7...将５平６），再走第 8 回合变着
+  const moves = [
+    '后车平四',
+    '将６平５',
+    '车一进二',
+    '象５退７',
+    '车一平三',
+    '士５退６',
+    '车四进七',
+    '将５进１',
+    '车四平五',
+    '将５平４',
+    '车五平六',
+    '将４平５',
+    '车三平五',
+    '将５平６',
+    '车五平四',
+    '将６平５',
+    '车四退八',
+  ]
+  for (const zh of moves) {
+    const move = chess.move(zh)
+    expect(move, zh).not.toBeNull()
+  }
+  // 黑方 4 卒分列 c/e 两列：全局编号 a=c2, b=c4, c=e1, d=e6，
+  // 「三卒」= e1 卒平六吃 f1 车
+  const move = chess.move('三卒平６')
+  expect(move, '三卒平６').not.toBeNull()
+  expect(`${move!.from}${move!.to}`).toBe('e1f1')
+})
+
+test('move - 百变象棋谱「廉蔺争功(改图2)」主线整局（含二卒平４）', () => {
+  const chess = new Chess(
+    '3a1k3/4a4/4b3R/4p4/6b2/2pc5/4P4/2p1B3R/4p4/3K5 w - - 0 1',
+  )
+  const moves = [
+    '后车平四',
+    '将６平５',
+    '车一进二',
+    '象５退７',
+    '车一平三',
+    '士５退６',
+    '车四进七',
+    '将５进１',
+    '车四平五',
+    '将５平４',
+    '车五平六',
+    '将４平５',
+    '车三平五',
+    '将５平６',
+    '车六退一',
+    '将６进１',
+    '车六退四',
+  ]
+  for (const zh of moves) {
+    const move = chess.move(zh)
+    expect(move, zh).not.toBeNull()
+  }
+  // 「二卒」= c4 卒（全局编号 b），平四吃 d4 车（而非 c2 平 d2）
+  const move18 = chess.move('二卒平４')
+  expect(move18, '二卒平４').not.toBeNull()
+  expect(`${move18!.from}${move18!.to}`).toBe('c4d4')
+  chess.move('车五平六')
+  chess.move('卒３平４')
+  chess.move('车六退五')
+  chess.move('卒４进１')
+  chess.move('车六退三')
+  chess.move('前卒平４')
+  chess.move('帅六进一')
+  expect(chess.fen()).toBe('9/9/5k3/4p4/6b2/9/4P4/4B4/3K5/9 b - - 0 13')
 })
 
 test('move - 百变象棋谱「二十八宿闹昆阳」整局中文着法', () => {
