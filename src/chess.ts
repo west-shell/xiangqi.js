@@ -591,9 +591,21 @@ export class Chess {
     let moveObj: InternalMove | null = null
 
     if (typeof move === 'string') {
-      moveObj = moveFromSan(move, this._turn, this._moves(), strict)
+      moveObj = moveFromSan(
+        move,
+        this._turn,
+        this._moves(),
+        strict,
+        this._board,
+      )
     } else if (move === null) {
-      moveObj = moveFromSan(SAN_NULLMOVE, this._turn, this._moves(), strict)
+      moveObj = moveFromSan(
+        SAN_NULLMOVE,
+        this._turn,
+        this._moves(),
+        strict,
+        this._board,
+      )
     } else if (typeof move === 'object') {
       const moves = this._moves()
 
@@ -935,7 +947,13 @@ export class Chess {
       if (node.move) {
         const suffixAnnotation = node.suffixAnnotation
 
-        const move = moveFromSan(node.move, this._turn, this._moves(), strict)
+        const move = moveFromSan(
+          node.move,
+          this._turn,
+          this._moves(),
+          strict,
+          this._board,
+        )
         if (!move) {
           throw new Error(`Invalid move in PGN: ${node.move}`)
         } else {

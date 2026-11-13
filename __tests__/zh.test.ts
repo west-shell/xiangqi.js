@@ -162,3 +162,53 @@ test('move - 百变象棋谱「八阵图」整局中文着法', () => {
   }
   expect(chess.fen()).toBe('2bR1ab1C/9/3k5/9/9/9/9/3p1p3/4K4/3r1r3 b - - 1 9')
 })
+
+test('move - 将军被牵制时前后缀按棋盘消歧（后炮退５）', () => {
+  // 黑方正被红炮 h9（借红兵 f9 作炮架）将军，唯一合法应着是后炮 e4 垫将。
+  // e3 炮无合法走法，前/后消歧必须依据棋盘位置而非合法走法列表。
+  const chess = new Chess(
+    '3k1P1C1/9/bN7/1P4p2/9/2p1cp3/4c4/2p1R1p2/2nrRrn2/2BAKAB2 b - - 0 7',
+  )
+  expect(chess.moves().length).toBe(1)
+  const move = chess.move('后炮退５')
+  expect(move).not.toBeNull()
+  expect(`${move!.from}${move!.to}`).toBe('e4e9')
+})
+
+test('move - 百变象棋谱「二十八宿闹昆阳」整局中文着法', () => {
+  const chess = new Chess(
+    '5a3/4aP3/b2kb1NC1/1P4p2/9/N1p1cp3/4c4/2p1R1p2/2nrRrn2/2BAKAB2 w - - 0 1',
+  )
+  const moves = [
+    '马九进七',
+    '将４退１',
+    '马三进四',
+    '士５退６',
+    '马七进八',
+    '将４退１',
+    '炮二进二',
+    '士６进５',
+    '兵四进一',
+    '象５退７',
+    '兵四平三',
+    '士５退６',
+    '兵三平四',
+    '后炮退５',
+    '兵四平五',
+    '将４平５',
+    '前车进一',
+    '将５平６',
+    '前车进六',
+    '将６进１',
+    '后车进七',
+    '将６进１',
+    '前车平四',
+  ]
+  for (const zh of moves) {
+    const move = chess.move(zh)
+    expect(move, zh).not.toBeNull()
+  }
+  expect(chess.fen()).toBe(
+    '5R1C1/4R4/bN3k3/1P4p2/9/2p2p3/9/2p3p2/2nr1rn2/2BAKAB2 b - - 6 12',
+  )
+})

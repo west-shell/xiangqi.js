@@ -419,13 +419,15 @@ export function moveFromSan(
   turn: Color,
   legalMoves: InternalMove[],
   strict = false,
+  board?: readonly Piece[],
 ): InternalMove | null {
   const cleanMove = strippedSan(san)
 
   // Chinese WXF -> letter WXF (permissive)
   if (/[\u4e00-\u9fff]/.test(cleanMove)) {
     const letterFormat = zhToWxf(cleanMove)
-    if (letterFormat) return moveFromSan(letterFormat, turn, legalMoves, strict)
+    if (letterFormat)
+      return moveFromSan(letterFormat, turn, legalMoves, strict, board)
     return null
   }
 
@@ -547,41 +549,59 @@ export function moveFromSan(
     const action = fbMatch[3]
     const targetNum = parseInt(fbMatch[4], 10)
     const piece = pieceLetter.toLowerCase() as PieceSymbol
+    const isRed = turn === WHITE
 
-    // Group legal moves of this piece by file
-    const byFile = new Map<number, InternalMove[]>()
-    for (const m of legalMoves) {
-      if (m.piece === piece) {
+    // Group the from-squares of this piece type by file. 前/后/中 slots
+    // are fixed by board position, not by legal moves: a same-file piece
+    // with no legal move (e.g. when the only legal replies are check
+    // evasions) still occupies its front/back slot. Fall back to squares
+    // derived from legal moves when no board is provided.
+    const byFile = new Map<number, number[]>()
+    if (board) {
+      for (let i = 0; i < board.length; i++) {
+        const p = board[i]
+        if (p && p.type === piece && p.color === turn) {
+          const f = file(i)
+          if (!byFile.has(f)) byFile.set(f, [])
+          byFile.get(f)!.push(i)
+        }
+      }
+    } else {
+      const byFileMoves = new Map<number, InternalMove[]>()
+      for (const m of legalMoves) {
+        if (m.piece !== piece) continue
         const f = file(m.from)
-        if (!byFile.has(f)) byFile.set(f, [])
-        byFile.get(f)!.push(m)
+        if (!byFileMoves.has(f)) byFileMoves.set(f, [])
+        byFileMoves.get(f)!.push(m)
+      }
+      for (const [f, moves] of byFileMoves) {
+        if (moves.length < 2) continue
+        moves.sort((a, b) =>
+          isRed ? rank(b.from) - rank(a.from) : rank(a.from) - rank(b.from),
+        )
+        const seen = new Set<number>()
+        const froms: number[] = []
+        for (const m of moves) {
+          if (!seen.has(m.from)) {
+            seen.add(m.from)
+            froms.push(m.from)
+          }
+        }
+        byFile.set(f, froms)
       }
     }
 
-    for (const [, moves] of byFile) {
-      if (moves.length < 2) continue
+    for (const [, froms] of byFile) {
+      if (froms.length < 2) continue
 
       // Sort by rank to determine front/middle/back order
-      const isRed = turn === WHITE
-      moves.sort((a, b) =>
-        isRed ? rank(b.from) - rank(a.from) : rank(a.from) - rank(b.from),
-      )
+      froms.sort((a, b) => (isRed ? rank(b) - rank(a) : rank(a) - rank(b)))
 
-      // Collect unique from-squares in order
-      const seen = new Set<number>()
-      const sorted: number[] = []
-      for (const m of moves) {
-        if (!seen.has(m.from)) {
-          seen.add(m.from)
-          sorted.push(m.from)
-        }
-      }
+      const idx = prefix === '+' ? 0 : prefix === '-' ? froms.length - 1 : 1
+      if (idx < 0 || idx >= froms.length) continue
+      const targetFrom = froms[idx]
 
-      const idx = prefix === '+' ? 0 : prefix === '-' ? sorted.length - 1 : 1
-      if (idx < 0 || idx >= sorted.length) continue
-      const targetFrom = sorted[idx]
-
-      for (const m of moves) {
+      for (const m of legalMoves) {
         if (m.from !== targetFrom) continue
         if (action === '.') {
           let targetFile: number
