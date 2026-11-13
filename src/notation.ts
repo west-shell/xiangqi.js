@@ -275,7 +275,7 @@ export function moveToZh(wxf: string, color: Color): string {
 
   // Label after piece (format: Pa.3)
   if (!zhPrefix && label) {
-    zhPrefix = ({ 'a': '一', 'b': '二', 'c': '三', 'd': '四', 'e': '五' })[label] ?? ''
+    zhPrefix = { a: '一', b: '二', c: '三', d: '四', e: '五' }[label] ?? ''
   }
 
   let zhAction: string
@@ -283,7 +283,8 @@ export function moveToZh(wxf: string, color: Color): string {
   else if (action === '+') zhAction = '进'
   else zhAction = '退'
 
-  const toZhNum = (n: string) => (isRed ? redNums[parseInt(n) - 1] : '１２３４５６７８９'[parseInt(n) - 1])
+  const toZhNum = (n: string) =>
+    isRed ? redNums[parseInt(n) - 1] : '１２３４５６７８９'[parseInt(n) - 1]
 
   let zh: string
   if (zhPrefix) {
@@ -318,28 +319,55 @@ export function moveToIccs(move: InternalMove): string {
 /** Convert Chinese WXF (e.g. '炮二平五', '前车平五', '一兵平1') to letter WXF (e.g. 'C2.5', 'R+.5', 'Pa.1') */
 export function zhToWxf(zh: string): string {
   const PIECE_MAP: Record<string, string> = {
-    '帅': 'K', '将': 'K',
-    '仕': 'A', '士': 'A',
-    '相': 'B', '象': 'B',
-    '马': 'N', '馬': 'N', '傌': 'N',
-    '车': 'R', '車': 'R', '俥': 'R',
-    '炮': 'C', '砲': 'C',
-    '兵': 'P', '卒': 'P',
+    帅: 'K',
+    将: 'K',
+    仕: 'A',
+    士: 'A',
+    相: 'B',
+    象: 'B',
+    马: 'N',
+    馬: 'N',
+    傌: 'N',
+    车: 'R',
+    車: 'R',
+    俥: 'R',
+    炮: 'C',
+    砲: 'C',
+    兵: 'P',
+    卒: 'P',
   }
 
   const NUM_MAP: Record<string, string> = {
-    '一': '1', '二': '2', '三': '3', '四': '4', '五': '5',
-    '六': '6', '七': '7', '八': '8', '九': '9',
-    '１': '1', '２': '2', '３': '3', '４': '4', '５': '5',
-    '６': '6', '７': '7', '８': '8', '９': '9',
+    一: '1',
+    二: '2',
+    三: '3',
+    四: '4',
+    五: '5',
+    六: '6',
+    七: '7',
+    八: '8',
+    九: '9',
+    '１': '1',
+    '２': '2',
+    '３': '3',
+    '４': '4',
+    '５': '5',
+    '６': '6',
+    '７': '7',
+    '８': '8',
+    '９': '9',
   }
 
   const ACTION_MAP: Record<string, string> = {
-    '进': '+', '退': '-', '平': '.',
+    进: '+',
+    退: '-',
+    平: '.',
   }
 
   const PREFIX_MAP: Record<string, string> = {
-    '前': '+', '中': '.', '后': '-',
+    前: '+',
+    中: '.',
+    后: '-',
   }
 
   const PIECE_CLS = '[车俥車马傌馬炮砲士仕象相帅將帅将兵卒]'
@@ -347,21 +375,37 @@ export function zhToWxf(zh: string): string {
   const ACT_CLS = '[进退平]'
 
   // Pattern A: 前车平五 / 后炮进三 → R+.5 / C-.3
-  let m = zh.match(new RegExp(`^([前后中])(${PIECE_CLS})(${ACT_CLS})(${NUM_CLS})$`))
+  let m = zh.match(
+    new RegExp(`^([前后中])(${PIECE_CLS})(${ACT_CLS})(${NUM_CLS})$`),
+  )
   if (m) {
-    return PIECE_MAP[m[2]] + PREFIX_MAP[m[1]] + ACTION_MAP[m[3]] + (NUM_MAP[m[4]] || m[4])
+    return (
+      PIECE_MAP[m[2]] +
+      PREFIX_MAP[m[1]] +
+      ACTION_MAP[m[3]] +
+      (NUM_MAP[m[4]] || m[4])
+    )
   }
 
   // Pattern B: 炮二平五 / 马8进7 / 卒1进1
-  m = zh.match(new RegExp(`^(${PIECE_CLS})(${NUM_CLS})(${ACT_CLS})(${NUM_CLS})$`))
+  m = zh.match(
+    new RegExp(`^(${PIECE_CLS})(${NUM_CLS})(${ACT_CLS})(${NUM_CLS})$`),
+  )
   if (m) {
-    return PIECE_MAP[m[1]] + (NUM_MAP[m[2]] || m[2]) + ACTION_MAP[m[3]] + (NUM_MAP[m[4]] || m[4])
+    return (
+      PIECE_MAP[m[1]] +
+      (NUM_MAP[m[2]] || m[2]) +
+      ACTION_MAP[m[3]] +
+      (NUM_MAP[m[4]] || m[4])
+    )
   }
 
   // Pattern C: 一兵平1 / 二卒进1 → Pa.1 / p b+1
-  m = zh.match(new RegExp(`^([一二三四五])(${PIECE_CLS})(${ACT_CLS})(${NUM_CLS})$`))
+  m = zh.match(
+    new RegExp(`^([一二三四五])(${PIECE_CLS})(${ACT_CLS})(${NUM_CLS})$`),
+  )
   if (m) {
-    const label = { '一': 'a', '二': 'b', '三': 'c', '四': 'd', '五': 'e' }[m[1]]
+    const label = { 一: 'a', 二: 'b', 三: 'c', 四: 'd', 五: 'e' }[m[1]]
     return PIECE_MAP[m[2]] + label + ACTION_MAP[m[3]] + (NUM_MAP[m[4]] || m[4])
   }
 
@@ -476,23 +520,27 @@ export function moveFromSan(
         else targetFile = targetNum - 1
         if (file(m.to) === targetFile && rank(m.from) === rank(m.to)) return m
       } else if (action === '+' || action === '-') {
+        const forward = turn === WHITE ? 1 : -1
+        const signedSteps = (rank(m.to) - rank(m.from)) * forward
         if (piece === 'r' || piece === 'c' || piece === 'k' || piece === 'p') {
-          const forward = turn === WHITE ? 1 : -1
-          if ((rank(m.to) - rank(m.from)) * forward === targetNum) return m
+          if (signedSteps === (action === '-' ? -targetNum : targetNum))
+            return m
         } else {
           let targetFile: number
           if (turn === WHITE) targetFile = 9 - targetNum
           else targetFile = targetNum - 1
-          if (file(m.to) === targetFile) return m
+          if (
+            file(m.to) === targetFile &&
+            (action === '-' ? signedSteps < 0 : signedSteps > 0)
+          )
+            return m
         }
       }
     }
   }
 
   // Permissive parser - handle front/back WXF: [piece][+-.][action][target] (e.g. 'R+.5')
-  const fbMatch = cleanMove.match(
-    /^([KABNRCPkabnrcp])([+\-.])([+.x-])([0-9])$/,
-  )
+  const fbMatch = cleanMove.match(/^([KABNRCPkabnrcp])([+\-.])([+.x-])([0-9])$/)
   if (fbMatch) {
     const pieceLetter = fbMatch[1]
     const prefix = fbMatch[2]
@@ -541,14 +589,25 @@ export function moveFromSan(
           else targetFile = targetNum - 1
           if (file(m.to) === targetFile && rank(m.from) === rank(m.to)) return m
         } else if (action === '+' || action === '-') {
-          if (piece === 'r' || piece === 'c' || piece === 'k' || piece === 'p') {
-            const forward = turn === WHITE ? 1 : -1
-            if ((rank(m.to) - rank(m.from)) * forward === targetNum) return m
+          const forward = turn === WHITE ? 1 : -1
+          const signedSteps = (rank(m.to) - rank(m.from)) * forward
+          if (
+            piece === 'r' ||
+            piece === 'c' ||
+            piece === 'k' ||
+            piece === 'p'
+          ) {
+            if (signedSteps === (action === '-' ? -targetNum : targetNum))
+              return m
           } else {
             let targetFile: number
             if (turn === WHITE) targetFile = 9 - targetNum
             else targetFile = targetNum - 1
-            if (file(m.to) === targetFile) return m
+            if (
+              file(m.to) === targetFile &&
+              (action === '-' ? signedSteps < 0 : signedSteps > 0)
+            )
+              return m
           }
         }
       }
@@ -556,9 +615,7 @@ export function moveFromSan(
   }
 
   // Permissive parser - try WXF format (e.g. 'N8+7', 'C2.5')
-  const wxfMatch = cleanMove.match(
-    /^([KABNRCPkabnrcp])?([1-9])([+.x-])([0-9])/,
-  )
+  const wxfMatch = cleanMove.match(/^([KABNRCPkabnrcp])?([1-9])([+.x-])([0-9])/)
   if (wxfMatch) {
     const piece = wxfMatch[1]?.toLowerCase() || PAWN
     const fromCol = parseInt(wxfMatch[2], 10)
@@ -600,10 +657,15 @@ export function moveFromSan(
         } else if (action === '+' || action === '-') {
           // For straight pieces (r,c,k,p): target is steps
           // For non-straight (n,a,b): target is destination column
-          if (piece === 'r' || piece === 'c' || piece === 'k' || piece === 'p') {
+          if (
+            piece === 'r' ||
+            piece === 'c' ||
+            piece === 'k' ||
+            piece === 'p'
+          ) {
             const forward = turn === WHITE ? 1 : -1
             const actualSteps = (rank(m.to) - rank(m.from)) * forward
-            if (actualSteps === targetNum) {
+            if (actualSteps === (action === '-' ? -targetNum : targetNum)) {
               return m
             }
           } else {
@@ -613,7 +675,12 @@ export function moveFromSan(
             } else {
               targetFile = targetNum - 1
             }
-            if (mToFile === targetFile) {
+            const forward = turn === WHITE ? 1 : -1
+            const signedSteps = (rank(m.to) - rank(m.from)) * forward
+            if (
+              mToFile === targetFile &&
+              (action === '-' ? signedSteps < 0 : signedSteps > 0)
+            ) {
               return m
             }
           }
